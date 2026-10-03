@@ -287,7 +287,8 @@ namespace BattleSolitaire.Presentation
                 source.Card == null ||
                 source.Card.Suit != targetSuit)
             {
-                _controller.ShowMessage("That card belongs on a different foundation.");
+                _controller.InvalidAction(
+                    "That card belongs on a different foundation.");
                 return false;
             }
 
@@ -304,7 +305,8 @@ namespace BattleSolitaire.Presentation
 
                 if (source.Index != column.Count - 1)
                 {
-                    _controller.ShowMessage("Only the exposed top card can move to a foundation.");
+                    _controller.InvalidAction(
+                        "Only the exposed top card can move to a foundation.");
                     return false;
                 }
 
