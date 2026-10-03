@@ -8,10 +8,12 @@ namespace BattleSolitaire.Presentation
     {
         private BattleGameController _controller;
         private Text _opponentIdentity;
+        private RawImage _opponentPortrait;
         private Text _opponentText;
         private Slider _opponentHealth;
         private Slider _opponentProgress;
         private Text _playerIdentity;
+        private RawImage _playerPortrait;
         private Text _playerText;
         private Slider _playerHealth;
         private Slider _energy;
@@ -96,6 +98,16 @@ namespace BattleSolitaire.Presentation
 
             _opponentIdentity.color = opponentBattler.Accent;
 
+            if (_opponentPortrait != null)
+            {
+                _opponentPortrait.texture =
+                    GameArt.GetBattlerPortrait(
+                        opponentBattler.Id);
+
+                _opponentPortrait.enabled =
+                    _opponentPortrait.texture != null;
+            }
+
             _opponentText.text =
                 "HP " + opponent.Health +
                 "   SHIELD " + opponent.Shield +
@@ -114,6 +126,16 @@ namespace BattleSolitaire.Presentation
                 playerBattler.Title;
 
             _playerIdentity.color = playerBattler.Accent;
+
+            if (_playerPortrait != null)
+            {
+                _playerPortrait.texture =
+                    GameArt.GetBattlerPortrait(
+                        playerBattler.Id);
+
+                _playerPortrait.enabled =
+                    _playerPortrait.texture != null;
+            }
 
             _playerText.text =
                 "HP " + player.Health +
@@ -198,6 +220,27 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 Vector2.zero);
 
+            RectTransform opponentPortraitRect =
+                PrototypeUI.CreateRect(
+                    "OpponentPortrait",
+                    top.transform,
+                    new Vector2(0.76f, 0.40f),
+                    new Vector2(0.88f, 0.94f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            _opponentPortrait =
+                opponentPortraitRect.gameObject
+                    .AddComponent<RawImage>();
+
+            _opponentPortrait.raycastTarget = false;
+            _opponentPortrait.color = Color.white;
+
+            PrototypeUI.AddOutline(
+                _opponentPortrait,
+                PrototypeUI.GoldDim,
+                1f);
+
             _opponentIdentity = PrototypeUI.CreateText(
                 "OpponentIdentity",
                 top.transform,
@@ -210,7 +253,7 @@ namespace BattleSolitaire.Presentation
             PrototypeUI.SetAnchoredBox(
                 _opponentIdentity.rectTransform,
                 new Vector2(0.04f, 0.43f),
-                new Vector2(0.84f, 0.70f),
+                new Vector2(0.74f, 0.70f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -242,7 +285,7 @@ namespace BattleSolitaire.Presentation
             PrototypeUI.SetAnchoredBox(
                 _opponentText.rectTransform,
                 new Vector2(0.04f, 0.25f),
-                new Vector2(0.96f, 0.45f),
+                new Vector2(0.74f, 0.45f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -281,6 +324,27 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.AddOutline(bottom, new Color32(47, 104, 142, 180), 1f);
 
+            RectTransform playerPortraitRect =
+                PrototypeUI.CreateRect(
+                    "PlayerPortrait",
+                    bottom.transform,
+                    new Vector2(0.82f, 0.63f),
+                    new Vector2(0.94f, 0.96f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            _playerPortrait =
+                playerPortraitRect.gameObject
+                    .AddComponent<RawImage>();
+
+            _playerPortrait.raycastTarget = false;
+            _playerPortrait.color = Color.white;
+
+            PrototypeUI.AddOutline(
+                _playerPortrait,
+                new Color32(47, 104, 142, 180),
+                1f);
+
             _playerIdentity = PrototypeUI.CreateText(
                 "PlayerIdentity",
                 bottom.transform,
@@ -293,7 +357,7 @@ namespace BattleSolitaire.Presentation
             PrototypeUI.SetAnchoredBox(
                 _playerIdentity.rectTransform,
                 new Vector2(0.04f, 0.79f),
-                new Vector2(0.67f, 0.98f),
+                new Vector2(0.78f, 0.98f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -309,7 +373,7 @@ namespace BattleSolitaire.Presentation
             PrototypeUI.SetAnchoredBox(
                 _playerText.rectTransform,
                 new Vector2(0.04f, 0.64f),
-                new Vector2(0.68f, 0.81f),
+                new Vector2(0.78f, 0.81f),
                 Vector2.zero,
                 Vector2.zero);
 

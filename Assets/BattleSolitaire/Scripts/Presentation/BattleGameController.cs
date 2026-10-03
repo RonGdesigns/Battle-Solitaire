@@ -19,6 +19,7 @@ namespace BattleSolitaire.Presentation
         private BattleFxView _fx;
         private TutorialOverlay _tutorial;
         private BattleFrontEndView _frontEnd;
+        private TargetingOverlay _targeting;
 
         private int _matchCounter;
         private float _statusRefreshTimer;
@@ -44,6 +45,10 @@ namespace BattleSolitaire.Presentation
             _tutorial != null && _tutorial.IsOpen;
 
         public bool MenuOpen => _menuOpen;
+
+        public bool TargetingOpen =>
+            _targeting != null &&
+            _targeting.IsOpen;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureRuntime()
@@ -97,7 +102,9 @@ namespace BattleSolitaire.Presentation
             if (Match == null)
                 return;
 
-            if (_menuOpen || TutorialOpen)
+            if (_menuOpen ||
+                TutorialOpen ||
+                TargetingOpen)
             {
                 _hud.Refresh();
                 return;
@@ -178,6 +185,15 @@ namespace BattleSolitaire.Presentation
                 _frontEnd.Refresh();
         }
 
+        public void SelectDifficulty(
+            BattleDifficulty difficulty)
+        {
+            Profile.SetDifficulty(difficulty);
+
+            if (_frontEnd != null)
+                _frontEnd.Refresh();
+        }
+
         public void StartBattleFromMenu()
         {
             if (_frontEnd != null)
@@ -220,7 +236,11 @@ namespace BattleSolitaire.Presentation
                 opponentSeed,
                 BuildModifiers(_playerBattler.Id),
                 BuildModifiers(_opponentBattler.Id));
-            _aiController = new BattleAIController(opponentSeed ^ 173);
+            _aiController = new BattleAIController(
+                opponentSeed ^ 173,
+                Profile != null
+                    ? Profile.Difficulty
+                    : BattleDifficulty.Standard);
             _aiSolver = new SolitaireMoveSolver();
             _lastObservedState = BattleMatchState.Running;
             _matchRecorded = false;
@@ -328,35 +348,86 @@ namespace BattleSolitaire.Presentation
             if (!CanPlayerAct())
                 return;
 
-            int targetColumn = -1;
+            int cost =
+                BattleAttack.GetCost(type);
+
+            if (Match.Player.Energy < cost)
+            {
+                InvalidAction(
+                    "Not enough energy.");
+                return;
+            }
 
             if (type == BattleAttackType.Lock ||
                 type == BattleAttackType.Blocker)
             {
-                targetColumn = FindBestOpponentTarget();
-
-                if (targetColumn < 0)
+                if (_targeting != null)
                 {
-                    InvalidAction(
-                        "No rival column can be targeted right now.");
+                    _targeting.Open(type);
                     return;
                 }
             }
 
-            bool success = Match.TryAttack(
-                BattleSide.Player,
-                type,
-                targetColumn);
+            ExecuteTargetedAttack(type, -1);
+        }
+
+        public void ExecuteTargetedAttack(
+            BattleAttackType type,
+            int targetColumn)
+        {
+            if (Match == null ||
+                Match.State != BattleMatchState.Running)
+            {
+                if (_targeting != null)
+                    _targeting.Close();
+
+                return;
+            }
+
+            bool needsColumn =
+                type == BattleAttackType.Lock ||
+                type == BattleAttackType.Blocker;
+
+            if (needsColumn &&
+                (targetColumn < 0 ||
+                 targetColumn > 6 ||
+                 !Match.CanUseColumn(
+                     BattleSide.Opponent,
+                     targetColumn)))
+            {
+                InvalidAction(
+                    "That rival column cannot be targeted.");
+
+                if (_targeting != null)
+                    _targeting.Close();
+
+                return;
+            }
+
+            bool success =
+                Match.TryAttack(
+                    BattleSide.Player,
+                    type,
+                    targetColumn);
+
+            if (_targeting != null)
+                _targeting.Close();
 
             if (!success)
             {
-                InvalidAction("Not enough energy.");
+                InvalidAction(
+                    "Attack could not be launched.");
                 return;
             }
 
             ShowMessage(
-                type.ToString().ToUpperInvariant() +
-                " launched!");
+                type.ToString()
+                    .ToUpperInvariant() +
+                (needsColumn
+                    ? " hit column " +
+                      (targetColumn + 1) +
+                      "!"
+                    : " launched!"));
 
             _feedback.PlayAttack();
             _fx.ShowAttack(type, false);
@@ -507,7 +578,8 @@ namespace BattleSolitaire.Presentation
             return Match != null &&
                    Match.State == BattleMatchState.Running &&
                    !TutorialOpen &&
-                   !_menuOpen;
+                   !_menuOpen &&
+                   !TargetingOpen;
         }
 
         private bool CanUsePlayerColumn(int column)
@@ -608,8 +680,17 @@ namespace BattleSolitaire.Presentation
             _board = BattleBoardView.Create(safeRoot, this);
             _hud = BattleHudView.Create(safeRoot, this);
             _fx = BattleFxView.Create(safeRoot);
-            _tutorial = TutorialOverlay.Create(safeRoot, this);
-            _frontEnd = BattleFrontEndView.Create(safeRoot, this);
+            _targeting = TargetingOverlay.Create(
+                safeRoot,
+                this);
+
+            _tutorial = TutorialOverlay.Create(
+                safeRoot,
+                this);
+
+            _frontEnd = BattleFrontEndView.Create(
+                safeRoot,
+                this);
         }
     }
 }

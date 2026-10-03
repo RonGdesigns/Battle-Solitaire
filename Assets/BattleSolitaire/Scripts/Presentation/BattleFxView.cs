@@ -7,6 +7,7 @@ namespace BattleSolitaire.Presentation
     public sealed class BattleFxView : MonoBehaviour
     {
         private Image _flash;
+        private Image _impact;
         private Text _banner;
 
         private float _flashTimer;
@@ -16,6 +17,10 @@ namespace BattleSolitaire.Presentation
         private float _bannerTimer;
         private float _bannerDuration;
         private Color _bannerColor;
+
+        private float _impactTimer;
+        private float _impactDuration;
+        private Color _impactColor;
 
         public static BattleFxView Create(Transform parent)
         {
@@ -63,6 +68,7 @@ namespace BattleSolitaire.Presentation
 
             ShowBanner("-" + amount + " HP", PrototypeUI.Danger, 0.55f);
             Flash(PrototypeUI.Danger, 0.24f);
+            Impact(PrototypeUI.Danger, 0.32f);
         }
 
         public void ShowAttack(BattleAttackType type, bool incoming)
@@ -76,9 +82,18 @@ namespace BattleSolitaire.Presentation
                 incoming ? PrototypeUI.Danger : PrototypeUI.Gold,
                 0.75f);
 
+            Color attackColor =
+                incoming
+                    ? PrototypeUI.Danger
+                    : PrototypeUI.Gold;
+
             Flash(
-                incoming ? PrototypeUI.Danger : PrototypeUI.Gold,
+                attackColor,
                 0.18f);
+
+            Impact(
+                attackColor,
+                0.34f);
         }
 
         public void ShowInvalid()
@@ -110,6 +125,51 @@ namespace BattleSolitaire.Presentation
             else
             {
                 _flash.gameObject.SetActive(false);
+            }
+
+            if (_impactTimer > 0f)
+            {
+                _impactTimer -= delta;
+
+                float normalized =
+                    Mathf.Clamp01(
+                        _impactTimer /
+                        _impactDuration);
+
+                float reveal =
+                    1f - normalized;
+
+                Color color =
+                    _impactColor;
+
+                color.a =
+                    Mathf.Sin(
+                        Mathf.PI * normalized) *
+                    0.55f;
+
+                _impact.color =
+                    color;
+
+                float scale =
+                    Mathf.Lerp(
+                        0.72f,
+                        1.32f,
+                        reveal);
+
+                _impact.rectTransform
+                    .localScale =
+                    new Vector3(
+                        scale,
+                        scale,
+                        1f);
+
+                _impact.gameObject
+                    .SetActive(true);
+            }
+            else
+            {
+                _impact.gameObject
+                    .SetActive(false);
             }
 
             if (_bannerTimer > 0f)
@@ -148,6 +208,25 @@ namespace BattleSolitaire.Presentation
             _flash.raycastTarget = false;
             _flash.gameObject.SetActive(false);
 
+            _impact = PrototypeUI.CreatePanel(
+                "ImpactFrame",
+                transform,
+                new Vector2(0.16f, 0.38f),
+                new Vector2(0.84f, 0.62f),
+                Vector2.zero,
+                Vector2.zero,
+                Color.clear);
+
+            _impact.raycastTarget = false;
+
+            PrototypeUI.AddOutline(
+                _impact,
+                PrototypeUI.Gold,
+                4f);
+
+            _impact.gameObject
+                .SetActive(false);
+
             _banner = PrototypeUI.CreateText(
                 "BattleBanner",
                 transform,
@@ -172,6 +251,20 @@ namespace BattleSolitaire.Presentation
             _flashColor = color;
             _flashDuration = Mathf.Max(0.01f, duration);
             _flashTimer = _flashDuration;
+        }
+
+        private void Impact(
+            Color color,
+            float duration)
+        {
+            _impactColor = color;
+            _impactDuration =
+                Mathf.Max(
+                    0.01f,
+                    duration);
+
+            _impactTimer =
+                _impactDuration;
         }
 
         private void ShowBanner(string text, Color color, float duration)

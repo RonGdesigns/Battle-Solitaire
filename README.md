@@ -102,3 +102,14 @@ See `Docs/MILESTONE_4.md` for details.
 - local rank points and Bronze-to-Diamond ranks
 - per-battler mastery XP and levels
 - Android play-test version advanced to 0.6.0
+
+
+### Milestone 7 — Targeting + difficulty + production art
+- manual Lock/Block rival-column targeting
+- target overlay shows lane depth and hidden-card count
+- Casual / Standard / Expert rival AI
+- Expert AI prioritizes strategically important columns
+- imported Vesper, Kael and Aldric portrait hooks
+- imported premium card-back art hook
+- larger attack impact animations
+- Android play-test version advanced to 0.7.0

@@ -29,6 +29,7 @@ namespace BattleSolitaire.Presentation
         private Text _center;
         private Text _bottomCorner;
         private Image _innerFrame;
+        private RawImage _backArt;
         private Vector3 _startPosition;
         private bool _dragging;
         private bool _dropHandled;
@@ -86,6 +87,25 @@ namespace BattleSolitaire.Presentation
                 _innerFrame,
                 new Color32(201, 164, 91, 120),
                 1f);
+
+            RectTransform backArtRect =
+                PrototypeUI.CreateRect(
+                    "CardBackArt",
+                    transform,
+                    new Vector2(0.045f, 0.035f),
+                    new Vector2(0.955f, 0.965f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            _backArt =
+                backArtRect.gameObject
+                    .AddComponent<RawImage>();
+
+            _backArt.texture =
+                GameArt.GetCardBack();
+
+            _backArt.color = Color.white;
+            _backArt.raycastTarget = false;
 
             _topCorner = PrototypeUI.CreateText(
                 "TopCorner",
@@ -239,13 +259,28 @@ namespace BattleSolitaire.Presentation
                 _background.color = PrototypeUI.CardBack;
                 _innerFrame.color = new Color32(8, 25, 49, 255);
 
+                bool hasBackArt =
+                    _backArt != null &&
+                    _backArt.texture != null;
+
+                if (_backArt != null)
+                    _backArt.gameObject.SetActive(hasBackArt);
+
                 _topCorner.text = "";
                 _bottomCorner.text = "";
-                _center.text = "♠\nBS";
+
+                _center.text =
+                    hasBackArt
+                        ? ""
+                        : "♠\nBS";
+
                 _center.fontSize = 34;
                 _center.color = PrototypeUI.Gold;
                 return;
             }
+
+            if (_backArt != null)
+                _backArt.gameObject.SetActive(false);
 
             if (_fogged)
             {

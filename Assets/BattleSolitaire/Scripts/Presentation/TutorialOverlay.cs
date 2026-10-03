@@ -19,7 +19,7 @@ namespace BattleSolitaire.Presentation
         {
             "Move cards just like Klondike: alternate colors and build downward. Tap a card then its destination, or drag it. Double-tap an exposed card to try the foundation.",
             "Good solitaire play powers the battle. Reveals, foundation moves, cleared columns and combos generate extra energy. Foundation progress also builds shield and damages your rival.",
-            "LOCK disables a rival column. FOG slows the rival AI and hides information. BLOCK obstructs a column until enough progress moves clear it. Save energy or spend it early.",
+            "LOCK and BLOCK now let you choose the rival column you want to disrupt. FOG affects the entire rival view. Save energy, inspect the target columns, and hit the lane that matters most.",
             "Drop your rival to 0 HP, or complete all four foundations for a Perfect Clear. Your rival is solving its own board at the same time, so keep moving."
         };
 

@@ -23,6 +23,9 @@ namespace BattleSolitaire.Presentation
         private const string RankPointsKey =
             "BattleSolitaire.Profile.RankPoints";
 
+        private const string DifficultyKey =
+            "BattleSolitaire.Profile.Difficulty";
+
         public BattlerId SelectedBattler
         {
             get
@@ -62,12 +65,37 @@ namespace BattleSolitaire.Presentation
                 RankPointsKey,
                 0);
 
+        public BattleSolitaire.Battle.BattleDifficulty Difficulty
+        {
+            get
+            {
+                int raw = PlayerPrefs.GetInt(
+                    DifficultyKey,
+                    (int)BattleSolitaire.Battle.BattleDifficulty.Standard);
+
+                raw = Mathf.Clamp(raw, 0, 2);
+
+                return
+                    (BattleSolitaire.Battle.BattleDifficulty)raw;
+            }
+        }
+
         public void SelectBattler(
             BattlerId id)
         {
             PlayerPrefs.SetInt(
                 SelectedBattlerKey,
                 (int)id);
+
+            PlayerPrefs.Save();
+        }
+
+        public void SetDifficulty(
+            BattleSolitaire.Battle.BattleDifficulty difficulty)
+        {
+            PlayerPrefs.SetInt(
+                DifficultyKey,
+                (int)difficulty);
 
             PlayerPrefs.Save();
         }

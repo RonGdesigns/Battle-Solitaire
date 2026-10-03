@@ -1,3 +1,4 @@
+using BattleSolitaire.Battle;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +18,15 @@ namespace BattleSolitaire.Presentation
         private Text _statsText;
         private Text _recordText;
         private Image _activeAccent;
+        private RawImage _activePortrait;
+
+        private readonly RawImage[] _battlerPortraits =
+            new RawImage[BattlerCatalog.Count];
+
+        private readonly Button[] _difficultyButtons =
+            new Button[3];
+
+        private Text _difficultyLabel;
 
         public bool IsOpen => gameObject.activeSelf;
 
@@ -67,6 +77,15 @@ namespace BattleSolitaire.Presentation
             _activeTraits.text = active.TraitLine;
             _activeAccent.color = active.Accent;
 
+            if (_activePortrait != null)
+            {
+                _activePortrait.texture =
+                    GameArt.GetBattlerPortrait(active.Id);
+
+                _activePortrait.enabled =
+                    _activePortrait.texture != null;
+            }
+
             for (int i = 0; i < BattlerCatalog.Count; i++)
             {
                 BattlerDefinition battler = BattlerCatalog.GetByIndex(i);
@@ -84,9 +103,47 @@ namespace BattleSolitaire.Presentation
                 _battlerGlyphs[i].color = selected
                     ? battler.Accent
                     : PrototypeUI.TextMuted;
+
+                if (_battlerPortraits[i] != null)
+                {
+                    _battlerPortraits[i].texture =
+                        GameArt.GetBattlerPortrait(battler.Id);
+
+                    _battlerPortraits[i].enabled =
+                        _battlerPortraits[i].texture != null;
+                }
             }
 
             BattleProfile profile = _controller.Profile;
+
+            BattleDifficulty difficulty =
+                profile.Difficulty;
+
+            if (_difficultyLabel != null)
+            {
+                _difficultyLabel.text =
+                    "RIVAL AI  •  " +
+                    BattleDifficultyTuning.GetLabel(
+                        difficulty);
+            }
+
+            for (int i = 0;
+                 i < _difficultyButtons.Length;
+                 i++)
+            {
+                BattleDifficulty option =
+                    (BattleDifficulty)i;
+
+                Image image =
+                    _difficultyButtons[i]
+                        .GetComponent<Image>();
+
+                image.color =
+                    option == difficulty
+                        ? new Color32(
+                            31, 99, 137, 255)
+                        : PrototypeUI.PanelAlt;
+            }
 
             _statsText.text =
                 "WINS  " + profile.Wins +
@@ -132,6 +189,28 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 Vector2.zero);
 
+            RectTransform crestRect =
+                PrototypeUI.CreateRect(
+                    "BattleCrest",
+                    transform,
+                    new Vector2(0.42f, 0.905f),
+                    new Vector2(0.51f, 0.975f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            RawImage crest =
+                crestRect.gameObject
+                    .AddComponent<RawImage>();
+
+            crest.texture =
+                GameArt.GetCrest();
+
+            crest.enabled =
+                crest.texture != null;
+
+            crest.raycastTarget = false;
+            crest.color = Color.white;
+
             Text motto = PrototypeUI.CreateText(
                 "Motto",
                 transform,
@@ -144,9 +223,67 @@ namespace BattleSolitaire.Presentation
             PrototypeUI.SetAnchoredBox(
                 motto.rectTransform,
                 new Vector2(0.055f, 0.785f),
-                new Vector2(0.72f, 0.825f),
+                new Vector2(0.52f, 0.825f),
                 Vector2.zero,
                 Vector2.zero);
+
+            _difficultyLabel =
+                PrototypeUI.CreateText(
+                    "DifficultyLabel",
+                    transform,
+                    "RIVAL AI  •  STANDARD",
+                    17,
+                    TextAnchor.MiddleRight,
+                    PrototypeUI.TextMuted,
+                    FontStyle.Bold);
+
+            PrototypeUI.SetAnchoredBox(
+                _difficultyLabel.rectTransform,
+                new Vector2(0.54f, 0.875f),
+                new Vector2(0.945f, 0.92f),
+                Vector2.zero,
+                Vector2.zero);
+
+            string[] difficultyNames =
+                { "CASUAL", "STANDARD", "EXPERT" };
+
+            for (int i = 0; i < 3; i++)
+            {
+                float left =
+                    0.54f + (i * 0.137f);
+
+                float right =
+                    left + 0.125f;
+
+                Button difficulty =
+                    PrototypeUI.CreateButton(
+                        "Difficulty_" + i,
+                        transform,
+                        difficultyNames[i],
+                        PrototypeUI.PanelAlt,
+                        PrototypeUI.TextLight);
+
+                PrototypeUI.SetAnchoredBox(
+                    difficulty.GetComponent<RectTransform>(),
+                    new Vector2(left, 0.825f),
+                    new Vector2(right, 0.87f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+                Text label =
+                    difficulty.GetComponentInChildren<Text>();
+
+                label.fontSize = 15;
+
+                int captured = i;
+
+                difficulty.onClick.AddListener(
+                    () => _controller.SelectDifficulty(
+                        (BattleDifficulty)captured));
+
+                _difficultyButtons[i] =
+                    difficulty;
+            }
 
             Image hero = PrototypeUI.CreatePanel(
                 "ActiveBattler",
@@ -167,6 +304,27 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 Vector2.zero,
                 PrototypeUI.Danger);
+
+            RectTransform activePortraitRect =
+                PrototypeUI.CreateRect(
+                    "ActivePortrait",
+                    hero.transform,
+                    new Vector2(0.66f, 0.08f),
+                    new Vector2(0.96f, 0.92f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            _activePortrait =
+                activePortraitRect.gameObject
+                    .AddComponent<RawImage>();
+
+            _activePortrait.color = Color.white;
+            _activePortrait.raycastTarget = false;
+
+            PrototypeUI.AddOutline(
+                _activePortrait,
+                PrototypeUI.GoldDim,
+                1.5f);
 
             Text activeLabel = PrototypeUI.CreateText(
                 "ActiveLabel",
@@ -287,19 +445,36 @@ namespace BattleSolitaire.Presentation
                     () => _controller.SelectBattler(
                         BattlerCatalog.GetByIndex(captured).Id));
 
+                RectTransform portraitRect =
+                    PrototypeUI.CreateRect(
+                        "Portrait",
+                        button.transform,
+                        new Vector2(0.08f, 0.31f),
+                        new Vector2(0.92f, 0.94f),
+                        Vector2.zero,
+                        Vector2.zero);
+
+                RawImage portrait =
+                    portraitRect.gameObject
+                        .AddComponent<RawImage>();
+
+                portrait.raycastTarget = false;
+                portrait.color = Color.white;
+                _battlerPortraits[i] = portrait;
+
                 Text glyph = PrototypeUI.CreateText(
                     "Glyph",
                     button.transform,
                     battler.SuitGlyph,
-                    48,
-                    TextAnchor.UpperCenter,
+                    30,
+                    TextAnchor.UpperLeft,
                     battler.Accent,
                     FontStyle.Bold);
 
                 PrototypeUI.SetAnchoredBox(
                     glyph.rectTransform,
-                    new Vector2(0.04f, 0.35f),
-                    new Vector2(0.96f, 0.96f),
+                    new Vector2(0.06f, 0.68f),
+                    new Vector2(0.30f, 0.94f),
                     Vector2.zero,
                     Vector2.zero);
 

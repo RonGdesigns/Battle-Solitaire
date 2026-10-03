@@ -25,16 +25,28 @@ namespace BattleSolitaire.Battle
     public sealed class BattleAIController
     {
         private readonly Random _random;
+        private readonly BattleDifficultySettings _settings;
+
         private float _moveTimer;
         private float _attackThinkTimer;
 
-        public BattleAIController(int seed)
+        public BattleDifficulty Difficulty { get; }
+
+        public BattleAIController(
+            int seed,
+            BattleDifficulty difficulty = BattleDifficulty.Standard)
         {
             _random = new Random(seed);
+            Difficulty = difficulty;
+            _settings = BattleDifficultyTuning.Get(difficulty);
+
             ScheduleNextMove();
+            _attackThinkTimer = _settings.AttackThinkSeconds;
         }
 
-        public BattleAIIntent Tick(float deltaTime, BattleMatch match)
+        public BattleAIIntent Tick(
+            float deltaTime,
+            BattleMatch match)
         {
             bool wantsMove = false;
             bool wantsAttack = false;
@@ -46,42 +58,69 @@ namespace BattleSolitaire.Battle
 
             if (_moveTimer <= 0f)
             {
-                bool fogged = match.Opponent.Disruptions.HasFog;
+                bool fogged =
+                    match.Opponent.Disruptions.HasFog;
 
-                // Fog removes reliable card information from the AI. Rather
-                // than letting it read hidden state perfectly, it hesitates
-                // and skips some move opportunities while the effect is active.
                 wantsMove =
-                    !fogged || _random.NextDouble() >= 0.55;
+                    !fogged ||
+                    _random.NextDouble() >=
+                        _settings.FogMoveSkipChance;
 
-                ScheduleNextMove(fogged ? 1.45f : 1f);
+                float fogMultiplier =
+                    fogged ? 1.45f : 1f;
+
+                ScheduleNextMove(
+                    fogMultiplier *
+                    _settings.MoveSpeedMultiplier);
             }
 
             if (_attackThinkTimer <= 0f)
             {
-                _attackThinkTimer = 0.6f;
+                _attackThinkTimer =
+                    _settings.AttackThinkSeconds;
 
-                BattleParticipant ai = match.Opponent;
-
-                if (ai.Energy >= BattleTuning.BlockerCost &&
-                    match.Player.ClearPercentage >= 0.35f)
+                if (_random.NextDouble() <=
+                    _settings.AttackAttemptChance)
                 {
-                    wantsAttack = true;
-                    attackType = BattleAttackType.Blocker;
-                    targetColumn = PickTargetColumn(match);
-                }
-                else if (ai.Energy >= BattleTuning.LockCost)
-                {
-                    wantsAttack = true;
+                    BattleParticipant ai =
+                        match.Opponent;
 
-                    if (_random.NextDouble() < 0.5)
+                    if (ai.Energy >=
+                            BattleTuning.BlockerCost &&
+                        match.Player.ClearPercentage >=
+                            _settings.BlockerProgressThreshold)
                     {
-                        attackType = BattleAttackType.Lock;
-                        targetColumn = PickTargetColumn(match);
+                        wantsAttack = true;
+                        attackType =
+                            BattleAttackType.Blocker;
+
+                        targetColumn =
+                            PickTargetColumn(match);
                     }
-                    else
+                    else if (ai.Energy >=
+                             BattleTuning.LockCost)
                     {
-                        attackType = BattleAttackType.Fog;
+                        wantsAttack = true;
+
+                        bool preferLock =
+                            Difficulty ==
+                                BattleDifficulty.Expert
+                                ? _random.NextDouble() < 0.65
+                                : _random.NextDouble() < 0.50;
+
+                        if (preferLock)
+                        {
+                            attackType =
+                                BattleAttackType.Lock;
+
+                            targetColumn =
+                                PickTargetColumn(match);
+                        }
+                        else
+                        {
+                            attackType =
+                                BattleAttackType.Fog;
+                        }
                     }
                 }
             }
@@ -93,25 +132,82 @@ namespace BattleSolitaire.Battle
                 targetColumn);
         }
 
-        private int PickTargetColumn(BattleMatch match)
+        private int PickTargetColumn(
+            BattleMatch match)
         {
+            if (_random.NextDouble() <=
+                _settings.SmartTargetingChance)
+            {
+                int bestColumn = -1;
+                int bestScore = int.MinValue;
+
+                for (int column = 0;
+                     column < 7;
+                     column++)
+                {
+                    if (!match.CanUseColumn(
+                            BattleSide.Player,
+                            column))
+                    {
+                        continue;
+                    }
+
+                    var cards =
+                        match.Player.Game
+                            .Tableau[column];
+
+                    int faceDown = 0;
+
+                    for (int i = 0;
+                         i < cards.Count;
+                         i++)
+                    {
+                        if (!cards[i].IsFaceUp)
+                            faceDown++;
+                    }
+
+                    int score =
+                        (faceDown * 12) +
+                        cards.Count;
+
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestColumn = column;
+                    }
+                }
+
+                if (bestColumn >= 0)
+                    return bestColumn;
+            }
+
             int start = _random.Next(0, 7);
 
-            for (int offset = 0; offset < 7; offset++)
+            for (int offset = 0;
+                 offset < 7;
+                 offset++)
             {
-                int column = (start + offset) % 7;
+                int column =
+                    (start + offset) % 7;
 
-                if (match.CanUseColumn(BattleSide.Player, column))
+                if (match.CanUseColumn(
+                        BattleSide.Player,
+                        column))
+                {
                     return column;
+                }
             }
 
             return start;
         }
 
-        private void ScheduleNextMove(float multiplier = 1f)
+        private void ScheduleNextMove(
+            float multiplier = 1f)
         {
             _moveTimer =
-                (0.7f + (float)_random.NextDouble() * 0.8f) *
+                (0.7f +
+                 (float)_random.NextDouble() *
+                 0.8f) *
                 multiplier;
         }
     }
