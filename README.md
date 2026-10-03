@@ -80,3 +80,15 @@ If the scene has not been generated yet, use **Battle Solitaire > Setup Playable
 This is a development/test build, not a Play Store release build.
 
 See `Docs/MILESTONE_4.md` for details.
+
+
+### Milestone 5 — Visual identity + front end
+- pre-battle battler/loadout screen
+- Vesper, Kael and Aldric starter roster
+- local profile stats stored on-device
+- battler identity carried into the battle HUD
+- dark navy / gold / cyan interface theme
+- green felt battle table refinement
+- upgraded card faces with real suit glyphs and premium card backs
+- result screen can return to loadout
+- Android play-test version advanced to 0.5.0

@@ -35,8 +35,8 @@ namespace BattleSolitaire.EditorTools
 
             PlayerSettings.productName = "Battle Solitaire";
             PlayerSettings.companyName = "RG Develops";
-            PlayerSettings.bundleVersion = "0.4.0";
-            PlayerSettings.Android.bundleVersionCode = 4;
+            PlayerSettings.bundleVersion = "0.5.0";
+            PlayerSettings.Android.bundleVersionCode = 5;
             PlayerSettings.defaultInterfaceOrientation =
                 UIOrientation.Portrait;
 
@@ -110,7 +110,7 @@ namespace BattleSolitaire.EditorTools
             Directory.CreateDirectory(OutputDirectory);
 
             string outputPath =
-                OutputDirectory + "/BattleSolitaire-M4-Playtest.apk";
+                OutputDirectory + "/BattleSolitaire-M5-Playtest.apk";
 
             var options = new BuildPlayerOptions
             {

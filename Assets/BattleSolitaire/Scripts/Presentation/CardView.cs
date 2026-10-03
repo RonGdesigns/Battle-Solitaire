@@ -25,7 +25,10 @@ namespace BattleSolitaire.Presentation
         private RectTransform _rect;
         private CanvasGroup _canvasGroup;
         private Image _background;
-        private Text _label;
+        private Text _topCorner;
+        private Text _center;
+        private Text _bottomCorner;
+        private Image _innerFrame;
         private Vector3 _startPosition;
         private bool _dragging;
         private bool _dropHandled;
@@ -60,37 +63,99 @@ namespace BattleSolitaire.Presentation
             _background = gameObject.AddComponent<Image>();
             _canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
-            Shadow shadow = gameObject.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.28f);
-            shadow.effectDistance = new Vector2(4f, -5f);
+            PrototypeUI.AddOutline(
+                _background,
+                PrototypeUI.GoldDim,
+                1.5f);
 
-            _label = PrototypeUI.CreateText(
-                "CardLabel",
+            Shadow shadow = gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.34f);
+            shadow.effectDistance = new Vector2(4f, -6f);
+
+            _innerFrame = PrototypeUI.CreatePanel(
+                "InnerFrame",
+                transform,
+                new Vector2(0.06f, 0.05f),
+                new Vector2(0.94f, 0.95f),
+                Vector2.zero,
+                Vector2.zero,
+                Color.clear);
+
+            _innerFrame.raycastTarget = false;
+            PrototypeUI.AddOutline(
+                _innerFrame,
+                new Color32(201, 164, 91, 120),
+                1f);
+
+            _topCorner = PrototypeUI.CreateText(
+                "TopCorner",
                 transform,
                 "",
-                28,
+                24,
+                TextAnchor.UpperLeft,
+                PrototypeUI.TextDark,
+                FontStyle.Bold);
+
+            PrototypeUI.SetAnchoredBox(
+                _topCorner.rectTransform,
+                new Vector2(0.08f, 0.63f),
+                new Vector2(0.48f, 0.94f),
+                Vector2.zero,
+                Vector2.zero);
+
+            _center = PrototypeUI.CreateText(
+                "Center",
+                transform,
+                "",
+                48,
                 TextAnchor.MiddleCenter,
                 PrototypeUI.TextDark,
                 FontStyle.Bold);
 
-            _label.rectTransform.offsetMin = new Vector2(5f, 5f);
-            _label.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            PrototypeUI.SetAnchoredBox(
+                _center.rectTransform,
+                new Vector2(0.08f, 0.18f),
+                new Vector2(0.92f, 0.82f),
+                Vector2.zero,
+                Vector2.zero);
 
-            transform.localScale = new Vector3(0.96f, 0.96f, 1f);
+            _bottomCorner = PrototypeUI.CreateText(
+                "BottomCorner",
+                transform,
+                "",
+                22,
+                TextAnchor.LowerRight,
+                PrototypeUI.TextDark,
+                FontStyle.Bold);
+
+            PrototypeUI.SetAnchoredBox(
+                _bottomCorner.rectTransform,
+                new Vector2(0.52f, 0.06f),
+                new Vector2(0.92f, 0.36f),
+                Vector2.zero,
+                Vector2.zero);
+
+            transform.localScale =
+                new Vector3(0.96f, 0.96f, 1f);
+
             ApplyVisuals();
         }
 
         private void Update()
         {
             float desired =
-                _dragging ? 1.08f : (_selected ? 1.055f : _targetScale);
+                _dragging
+                    ? 1.08f
+                    : (_selected ? 1.055f : _targetScale);
 
             float next = Mathf.Lerp(
                 transform.localScale.x,
                 desired,
-                1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
+                1f - Mathf.Exp(
+                    -18f * Time.unscaledDeltaTime));
 
-            transform.localScale = new Vector3(next, next, 1f);
+            transform.localScale =
+                new Vector3(next, next, 1f);
         }
 
         public void SetSelected(bool selected)
@@ -131,7 +196,7 @@ namespace BattleSolitaire.Presentation
             CurrentDrag = this;
             _startPosition = _rect.position;
             _canvasGroup.blocksRaycasts = false;
-            _canvasGroup.alpha = 0.93f;
+            _canvasGroup.alpha = 0.94f;
             transform.SetAsLastSibling();
         }
 
@@ -172,28 +237,61 @@ namespace BattleSolitaire.Presentation
             if (!Card.IsFaceUp)
             {
                 _background.color = PrototypeUI.CardBack;
-                _label.color = PrototypeUI.TextLight;
-                _label.text = "BS";
+                _innerFrame.color = new Color32(8, 25, 49, 255);
+
+                _topCorner.text = "";
+                _bottomCorner.text = "";
+                _center.text = "♠\nBS";
+                _center.fontSize = 34;
+                _center.color = PrototypeUI.Gold;
                 return;
             }
 
             if (_fogged)
             {
-                _background.color = new Color32(65, 68, 79, 255);
-                _label.color = PrototypeUI.TextLight;
-                _label.text = "??";
+                _background.color = new Color32(49, 55, 68, 255);
+                _innerFrame.color = new Color32(37, 43, 55, 255);
+
+                _topCorner.text = "";
+                _bottomCorner.text = "";
+                _center.text = "??";
+                _center.fontSize = 44;
+                _center.color = PrototypeUI.TextLight;
                 return;
             }
 
             _background.color = _selected
-                ? new Color32(255, 226, 130, 255)
+                ? new Color32(255, 233, 170, 255)
                 : PrototypeUI.CardFace;
 
-            _label.color = Card.IsRed
-                ? new Color32(180, 45, 55, 255)
-                : PrototypeUI.TextDark;
+            _innerFrame.color = new Color32(248, 244, 233, 255);
 
-            _label.text = RankLabel(Card.Rank) + "\n" + SuitLabel(Card.Suit);
+            Color ink = Card.IsRed
+                ? new Color32(178, 43, 55, 255)
+                : new Color32(18, 31, 49, 255);
+
+            string rank = RankLabel(Card.Rank);
+            string suit = SuitGlyph(Card.Suit);
+
+            _topCorner.text = rank + "\n" + suit;
+            _bottomCorner.text = rank + " " + suit;
+            _center.text = IsFaceCard(Card.Rank)
+                ? rank + "\n" + suit
+                : suit;
+
+            _center.fontSize =
+                IsFaceCard(Card.Rank) ? 42 : 56;
+
+            _topCorner.color = ink;
+            _bottomCorner.color = ink;
+            _center.color = ink;
+        }
+
+        private static bool IsFaceCard(Rank rank)
+        {
+            return rank == Rank.Jack ||
+                   rank == Rank.Queen ||
+                   rank == Rank.King;
         }
 
         private static string RankLabel(Rank rank)
@@ -208,14 +306,14 @@ namespace BattleSolitaire.Presentation
             }
         }
 
-        private static string SuitLabel(Suit suit)
+        public static string SuitGlyph(Suit suit)
         {
             switch (suit)
             {
-                case Suit.Clubs: return "C";
-                case Suit.Diamonds: return "D";
-                case Suit.Hearts: return "H";
-                case Suit.Spades: return "S";
+                case Suit.Clubs: return "♣";
+                case Suit.Diamonds: return "♦";
+                case Suit.Hearts: return "♥";
+                case Suit.Spades: return "♠";
                 default: return "?";
             }
         }

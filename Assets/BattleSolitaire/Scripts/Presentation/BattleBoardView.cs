@@ -36,7 +36,11 @@ namespace BattleSolitaire.Presentation
                 new Vector2(-18f, -10f));
 
             Image background = root.gameObject.AddComponent<Image>();
-            background.color = new Color32(21, 61, 58, 255);
+            background.color = PrototypeUI.Felt;
+            PrototypeUI.AddOutline(
+                background,
+                PrototypeUI.GoldDim,
+                1.5f);
 
             var view = root.gameObject.AddComponent<BattleBoardView>();
             view._controller = controller;
@@ -366,7 +370,7 @@ namespace BattleSolitaire.Presentation
                 new Vector2(0f, 1f),
                 new Vector2(174f, -214f),
                 new Vector2(302f, -36f),
-                new Color32(30, 73, 69, 255));
+                PrototypeUI.FeltDark);
 
             _wasteRoot = wastePanel.rectTransform;
 
@@ -392,7 +396,7 @@ namespace BattleSolitaire.Presentation
                     new Vector2(0f, 1f),
                     new Vector2(foundationStart + i * 148f, -214f),
                     new Vector2(foundationStart + i * 148f + CardWidth, -36f),
-                    new Color32(31, 77, 72, 255));
+                    new Color32(12, 53, 45, 255));
 
                 _foundationRoots[i] = slot.rectTransform;
 
@@ -402,10 +406,10 @@ namespace BattleSolitaire.Presentation
                 Text label = PrototypeUI.CreateText(
                     "FoundationHint",
                     slot.transform,
-                    suit.ToString().Substring(0, 1),
+                    CardView.SuitGlyph(suit),
                     28,
                     TextAnchor.MiddleCenter,
-                    new Color32(156, 188, 183, 255),
+                    PrototypeUI.TextMuted,
                     FontStyle.Bold);
             }
 
@@ -424,7 +428,7 @@ namespace BattleSolitaire.Presentation
                     new Vector2(0f, 1f),
                     new Vector2(x, -1020f),
                     new Vector2(x + CardWidth, -250f),
-                    new Color32(25, 70, 65, 120));
+                    new Color32(7, 45, 37, 130));
 
                 _columnRoots[column] = lane.rectTransform;
 
