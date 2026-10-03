@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BattleSolitaire.Battle;
+using BattleSolitaire.Core;
 using BattleSolitaire.Presentation;
 using UnityEditor;
 using UnityEngine;
@@ -78,7 +79,7 @@ namespace BattleSolitaire.EditorTools
                 ExecuteEvents.Execute(menu.transform.Find("Battler_" + name).gameObject,
                     new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left }, ExecuteEvents.pointerClickHandler);
                 Check(new BattleProfile().SelectedBattler == id, "Battler persists " + name);
-                Check(menu.GetComponentsInChildren<Text>().Any(t => t.name == "ActiveName" && t.text == name.ToUpperInvariant()), "Hero updates");
+                Check(menu.GetComponentsInChildren<Text>().Any(t => t.name == "ActiveName" && t.text.Equals(name, StringComparison.OrdinalIgnoreCase)), "Hero updates");
                 string passive = BattlerCatalog.Get(id).TraitLine.Split('•')[0].Trim();
                 Check(menu.GetComponentsInChildren<Text>().Any(t => t.name == "PassiveName" && t.text == passive), "Passive updates");
                 Capture(canvas, menu, output, name.ToLowerInvariant() + "-1080x1920", 1080, 1920, report);
@@ -98,8 +99,8 @@ namespace BattleSolitaire.EditorTools
             Capture(canvas, menu, output, "phone-safe-area", 1080, 2340, report);
             ((RectTransform)safe.transform).anchorMin = Vector2.zero;
             ((RectTransform)safe.transform).anchorMax = Vector2.one;
-            Texture original = menu.GetComponentsInChildren<RawImage>().First(i => i.name == "ActivePortrait").texture;
-            var hero = menu.GetComponentsInChildren<AspectFillRawImage>().First(i => i.name == "ActivePortrait");
+            Texture original = menu.GetComponentsInChildren<RawImage>().First(i => i.name == "Portrait" && i.transform.parent.name == "Battler_Vesper").texture;
+            var hero = menu.GetComponentsInChildren<AspectFillRawImage>().First(i => i.name == "Portrait" && i.transform.parent.name == "Battler_Vesper");
             hero.SetTexture(null);
             Capture(canvas, menu, output, "missing-portrait", 1080, 1920, report);
             hero.SetTexture(original);
@@ -111,9 +112,10 @@ namespace BattleSolitaire.EditorTools
             ExecuteEvents.Execute(battle.gameObject, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
             Check(!controller.MenuOpen && controller.Match.State == BattleMatchState.Running, "Battle launches");
             var hud = UnityEngine.Object.FindAnyObjectByType<BattleHudView>();
-            foreach (RawImage portrait in hud.GetComponentsInChildren<RawImage>())
+            foreach (RawImage portrait in hud.GetComponentsInChildren<RawImage>().Where(i => i.name.EndsWith("Portrait")))
                 Check(portrait.GetComponent<AspectFillRawImage>() != null, "HUD uses aspect crop");
             Capture(canvas, null, output, "battle-hud", 1080, 1920, report);
+            Capture(canvas, null, output, "battle-phone", 390, 844, report);
             controller.ShowTutorial();
             Check(controller.TutorialOpen, "Tutorial opens");
             UnityEngine.Object.FindAnyObjectByType<TutorialOverlay>().CloseAndRemember();
@@ -129,6 +131,7 @@ namespace BattleSolitaire.EditorTools
                 controller.ExecuteTargetedAttack(type, column);
                 Check(!controller.TargetingOpen && controller.Match.Player.Energy == 100 - BattleAttack.GetCost(type), "Targeted attack spends correct energy");
             }
+            VerifyDragAndDrop(controller,canvas,output,report);
             int wins = controller.Profile.Wins;
             controller.Match.Opponent.ApplyDamage(10000);
             controller.Match.Tick(0);
@@ -139,9 +142,35 @@ namespace BattleSolitaire.EditorTools
             Check(controller.MenuOpen, "Result returns to Loadout");
             Check(menu.GetComponentsInChildren<Text>().Any(t => t.name == "StatValue" && t.text == (wins+1).ToString()), "Menu stats refresh");
             Capture(canvas, menu, output, "career-after-win", 1080, 1920, report);
-            report.Add("PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, result return, career refresh, portrait settings.");
+            report.Add("PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, legal/illegal drag dispatch, result return, career refresh, portrait settings, nonempty frame/icon meshes.");
             report.Add("Android build utility compiled with the editor assembly. No APK/device test in this review.");
             File.WriteAllLines(Path.Combine(output, "verification.txt"), report);
+        }
+
+        private static void VerifyDragAndDrop(BattleGameController controller,Canvas canvas,string output,List<string> report)
+        {
+            controller.StartRematch();
+            var board=UnityEngine.Object.FindAnyObjectByType<BattleBoardView>();
+            SolitaireGame game=controller.Match.Player.Game;
+            for(int i=0;i<3;i++)game.Tableau[i].Clear();
+            game.Tableau[0].Add(new CardState(Suit.Spades,Rank.King,true));
+            game.Tableau[1].Add(new CardState(Suit.Hearts,Rank.Queen,true));
+            game.Tableau[2].Add(new CardState(Suit.Diamonds,Rank.Queen,true));
+            board.Refresh();
+            Capture(canvas,null,output,"battle-court-cards",1080,1920,report);
+            var field=typeof(BattleBoardView).GetField("_renderedCards",BindingFlags.Instance|BindingFlags.NonPublic);
+            var pointer=new PointerEventData(EventSystem.current){position=new Vector2(300,600),button=PointerEventData.InputButton.Left};
+            CardView moving=((List<CardView>)field.GetValue(board)).First(c=>c.SourceKind==CardSourceKind.Tableau && c.Column==1);
+            moving.OnBeginDrag(pointer);moving.OnDrag(pointer);
+            board.GetComponentsInChildren<PileDropTarget>().First(t=>t.name=="Column_2").OnDrop(pointer);
+            moving.OnEndDrag(pointer);
+            Check(game.Tableau[1].Count==1 && game.Tableau[2].Count==1 && CardView.CurrentDrag==null,"Illegal drag returns without changing cards");
+            moving=((List<CardView>)field.GetValue(board)).First(c=>c.SourceKind==CardSourceKind.Tableau && c.Column==1);
+            moving.OnBeginDrag(pointer);moving.OnDrag(pointer);
+            board.GetComponentsInChildren<PileDropTarget>().First(t=>t.name=="Column_0").OnDrop(pointer);
+            moving.OnEndDrag(pointer);
+            Check(game.Tableau[1].Count==0 && game.Tableau[0].Count==2 && game.Tableau[0][1].Rank==Rank.Queen && CardView.CurrentDrag==null,"Legal drag updates tableau");
+            controller.StartRematch();
         }
 
         private static void Capture(Canvas canvas, BattleFrontEndView menu, string output, string name, int width, int height, List<string> report)
@@ -163,9 +192,26 @@ namespace BattleSolitaire.EditorTools
             canvas.scaleFactor = Mathf.Sqrt((float)width * height / (1080f * 1920f));
             Canvas.ForceUpdateCanvases();
             foreach (AspectRatioFitter fitter in canvas.GetComponentsInChildren<AspectRatioFitter>()) fitter.SetLayoutHorizontal();
+            var board = UnityEngine.Object.FindAnyObjectByType<BattleBoardView>();
+            typeof(BattleBoardView).GetMethod("FitLayout",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(board,null);
             Canvas.ForceUpdateCanvases();
-            foreach (AspectFillRawImage image in canvas.GetComponentsInChildren<AspectFillRawImage>()) image.Refresh();
+            foreach (AspectFillRawImage image in canvas.GetComponentsInChildren<AspectFillRawImage>())
+            {
+                image.Refresh();
+                RawImage raw=image.GetComponent<RawImage>();
+                if(raw.texture!=null && raw.rectTransform.rect.width>0 && raw.rectTransform.rect.height>0)
+                    {
+                    Check(Mathf.Abs(raw.texture.width*raw.uvRect.width/(raw.texture.height*raw.uvRect.height)-raw.rectTransform.rect.width/raw.rectTransform.rect.height)<.01f,"Rendered portrait/texture aspect");
+                    Check(raw.uvRect.xMin >= image.SourceRegion.xMin-.001f && raw.uvRect.xMax <= image.SourceRegion.xMax+.001f && raw.uvRect.yMin >= image.SourceRegion.yMin-.001f && raw.uvRect.yMax <= image.SourceRegion.yMax+.001f,"Atlas crop remains inside the character region");
+                    }
+            }
             Canvas.ForceUpdateCanvases();
+            foreach (Graphic g in canvas.GetComponentsInChildren<Graphic>()) g.SetAllDirty();
+            Canvas.ForceUpdateCanvases();
+            foreach (Graphic g in canvas.GetComponentsInChildren<Graphic>().Where(g=>(g is FantasyFrame || g is FantasyIcon) && g.isActiveAndEnabled && !g.canvasRenderer.cull && g.rectTransform.rect.width>0 && g.rectTransform.rect.height>0))
+                Check(g.canvasRenderer.GetMesh()!=null && g.canvasRenderer.GetMesh().vertexCount>0,"Metal frame/icon renders: "+g.name);
+            foreach (Text corner in canvas.GetComponentsInChildren<Text>().Where(t=>t.name=="TopCorner" && !string.IsNullOrEmpty(t.text)))
+                Check(corner.preferredHeight<=corner.rectTransform.rect.height+1,"Card rank and suit fit");
             camera.Render();
             RenderTexture.active = target;
             var pixels = new Texture2D(width, height, TextureFormat.RGB24, false);

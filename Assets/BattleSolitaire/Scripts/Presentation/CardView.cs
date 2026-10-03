@@ -30,6 +30,7 @@ namespace BattleSolitaire.Presentation
         private Text _bottomCorner;
         private Image _innerFrame;
         private RawImage _backArt;
+        private RawImage _courtArt;
         private Vector3 _startPosition;
         private bool _dragging;
         private bool _dropHandled;
@@ -107,6 +108,9 @@ namespace BattleSolitaire.Presentation
             _backArt.color = Color.white;
             _backArt.raycastTarget = false;
 
+            _backArt.gameObject.AddComponent<AspectFillRawImage>().SetTexture(_backArt.texture);
+            _courtArt=FantasyUI.Portrait("CourtArt",transform,Card.Rank==Rank.Queen?BattlerId.Vesper:Card.Rank==Rank.King?BattlerId.Aldric:BattlerId.Kael,.28f,.16f,.91f,.88f);
+            FantasyUI.Frame(transform,new Color32(184,147,91,255));
             _topCorner = PrototypeUI.CreateText(
                 "TopCorner",
                 transform,
@@ -118,7 +122,7 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _topCorner.rectTransform,
-                new Vector2(0.08f, 0.63f),
+                new Vector2(0.08f, 0.48f),
                 new Vector2(0.48f, 0.94f),
                 Vector2.zero,
                 Vector2.zero);
@@ -154,6 +158,9 @@ namespace BattleSolitaire.Presentation
                 new Vector2(0.92f, 0.36f),
                 Vector2.zero,
                 Vector2.zero);
+
+            _topCorner.font=FantasyUI.Body;
+            _bottomCorner.font=FantasyUI.Body;
 
             transform.localScale =
                 new Vector3(0.96f, 0.96f, 1f);
@@ -251,6 +258,8 @@ namespace BattleSolitaire.Presentation
 
         private void ApplyVisuals()
         {
+            bool courtVisible=Card != null && Card.IsFaceUp && !_fogged && IsFaceCard(Card.Rank);
+            if(_courtArt!=null)_courtArt.gameObject.SetActive(courtVisible);
             if (Card == null)
                 return;
 
@@ -310,9 +319,7 @@ namespace BattleSolitaire.Presentation
 
             _topCorner.text = rank + "\n" + suit;
             _bottomCorner.text = rank + " " + suit;
-            _center.text = IsFaceCard(Card.Rank)
-                ? rank + "\n" + suit
-                : suit;
+            _center.text = IsFaceCard(Card.Rank) ? "" : suit;
 
             _center.fontSize =
                 IsFaceCard(Card.Rank) ? 42 : 56;

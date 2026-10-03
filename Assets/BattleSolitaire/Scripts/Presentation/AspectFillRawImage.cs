@@ -8,6 +8,10 @@ namespace BattleSolitaire.Presentation
     public sealed class AspectFillRawImage : MonoBehaviour
     {
         private RawImage _image;
+        private Rect _sourceRegion = new Rect(0,0,1,1);
+        public Vector2 FocalPoint = new Vector2(0.5f,0.5f);
+        public Rect SourceRegion => _sourceRegion;
+        public void SetSourceRegion(Rect region) { _sourceRegion = region; Refresh(); }
         private Texture _lastTexture;
         private Vector2 _lastSize;
         private Vector2Int _lastTextureSize;
@@ -42,7 +46,12 @@ namespace BattleSolitaire.Presentation
             _lastSize = _image.rectTransform.rect.size;
             _lastTextureSize = _lastTexture == null
                 ? Vector2Int.zero : new Vector2Int(_lastTexture.width, _lastTexture.height);
-            _image.uvRect = CalculateUvRect(_lastTextureSize, _lastSize);
+            Rect crop = CalculateUvRect(new Vector2(_lastTextureSize.x * _sourceRegion.width, _lastTextureSize.y * _sourceRegion.height), _lastSize);
+            crop.x = (1f - crop.width) * Mathf.Clamp01(FocalPoint.x);
+            crop.y = (1f - crop.height) * Mathf.Clamp01(FocalPoint.y);
+            _image.uvRect = new Rect(_sourceRegion.x + crop.x * _sourceRegion.width,
+                _sourceRegion.y + crop.y * _sourceRegion.height,
+                crop.width * _sourceRegion.width, crop.height * _sourceRegion.height);
         }
 
         public static Rect CalculateUvRect(Vector2 source, Vector2 destination)

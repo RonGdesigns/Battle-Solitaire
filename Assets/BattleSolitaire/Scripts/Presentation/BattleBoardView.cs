@@ -12,6 +12,8 @@ namespace BattleSolitaire.Presentation
         private const float CardHeight = 178f;
 
         private BattleGameController _controller;
+        private RectTransform _layoutRoot;
+        private Vector2 _layoutSize;
         private Button _stockButton;
         private Text _stockLabel;
         private RectTransform _wasteRoot;
@@ -30,26 +32,46 @@ namespace BattleSolitaire.Presentation
             RectTransform root = PrototypeUI.CreateRect(
                 "BattleBoard",
                 parent,
-                new Vector2(0f, 0.18f),
-                new Vector2(1f, 0.82f),
+                new Vector2(0f, 0.286f),
+                new Vector2(1f, 0.825f),
                 new Vector2(18f, 10f),
                 new Vector2(-18f, -10f));
 
             Image background = root.gameObject.AddComponent<Image>();
             background.color = PrototypeUI.Felt;
-            PrototypeUI.AddOutline(
-                background,
-                PrototypeUI.GoldDim,
-                1.5f);
+            RawImage felt = FantasyUI.Art("EmeraldFelt",root,GameArt.GetFelt(),0,0,1,1);
+            felt.gameObject.AddComponent<AspectFillRawImage>().SetTexture(felt.texture);
+            felt.color = new Color(.68f,.72f,.7f,1f);
+            Image feltShade=PrototypeUI.CreatePanel("FeltShade",root,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero,new Color32(8,39,28,60));
+            feltShade.raycastTarget=false;
+            FantasyUI.Frame(root,FantasyUI.Gold,true);
 
             var view = root.gameObject.AddComponent<BattleBoardView>();
             view._controller = controller;
+            view._layoutRoot = FantasyUI.Rect("TableLayout", root, .5f, 1f, .5f, 1f);
+            view._layoutRoot.pivot = new Vector2(.5f,1f);
+            view.FitLayout();
             view.BuildStaticLayout();
             view.Refresh();
 
             return view;
         }
 
+        private void FitLayout()
+        {
+            _layoutSize = ((RectTransform)transform).rect.size;
+            float scale = Mathf.Max(0.1f, _layoutSize.x / 1080f);
+            _layoutRoot.sizeDelta = new Vector2(1080f, _layoutSize.y / scale);
+            _layoutRoot.localScale = new Vector3(scale,scale,1);
+        }
+        private void LateUpdate()
+        {
+            if (_layoutRoot != null && _layoutSize != ((RectTransform)transform).rect.size)
+            {
+                FitLayout();
+                Refresh();
+            }
+        }
         public void Refresh()
         {
             for (int i = 0; i < _dynamicObjects.Count; i++)
@@ -66,7 +88,7 @@ namespace BattleSolitaire.Presentation
             SolitaireGame game = player.Game;
 
             _stockLabel.text = game.Stock.Count > 0
-                ? "DRAW\n" + game.Stock.Count
+                ? "STOCK " + game.Stock.Count
                 : (game.Waste.Count > 0 ? "RECYCLE" : "EMPTY");
 
             if (game.Waste.Count > 0)
@@ -104,6 +126,10 @@ namespace BattleSolitaire.Presentation
             {
                 List<CardState> cards = game.Tableau[column];
                 float y = 0f;
+                float depth = 0f;
+                for (int k=0;k<cards.Count-1;k++) depth += cards[k].IsFaceUp ? 48f : 29f;
+                float available = Mathf.Max(80f, _layoutRoot.rect.height - 400f - CardHeight - 100f);
+                float spacing = depth > 0f ? Mathf.Min(1f,available/depth) : 1f;
 
                 for (int index = 0; index < cards.Count; index++)
                 {
@@ -118,7 +144,7 @@ namespace BattleSolitaire.Presentation
                         card.Suit,
                         new Vector2(0f, y));
 
-                    y -= card.IsFaceUp ? 48f : 29f;
+                    y -= (card.IsFaceUp ? 48f : 29f) * spacing;
                 }
             }
 
@@ -341,20 +367,24 @@ namespace BattleSolitaire.Presentation
 
         private void BuildStaticLayout()
         {
+            FantasyUI.Label("TableHeading",_layoutRoot,"CLEAR CARDS. DEAL DAMAGE.",22,new Color32(177,199,175,255),.045f,.935f,.49f,.986f,true);
+            FantasyUI.Label("TableMotto",_layoutRoot,"A SHARPER MIND WINS.",20,new Color32(177,199,175,255),.56f,.935f,.96f,.986f,true,TextAnchor.MiddleRight);
             // Stock
             Image stockPanel = PrototypeUI.CreatePanel(
                 "Stock",
-                transform,
+                _layoutRoot,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(24f, -214f),
-                new Vector2(152f, -36f),
+                new Vector2(24f, -312f),
+                new Vector2(152f, -134f),
                 PrototypeUI.CardBack);
 
             _stockButton = stockPanel.gameObject.AddComponent<Button>();
             _stockButton.targetGraphic = stockPanel;
             _stockButton.onClick.AddListener(_controller.PlayerDraw);
 
+            RawImage stockArt=FantasyUI.Art("StockArt",stockPanel.transform,GameArt.GetCardBack(),0,0,1,1);
+            stockArt.gameObject.AddComponent<AspectFillRawImage>().SetTexture(stockArt.texture);
             _stockLabel = PrototypeUI.CreateText(
                 "StockLabel",
                 stockPanel.transform,
@@ -364,14 +394,16 @@ namespace BattleSolitaire.Presentation
                 PrototypeUI.TextLight,
                 FontStyle.Bold);
 
+            _stockLabel.font=FantasyUI.Body;
+            PrototypeUI.SetAnchoredBox(_stockLabel.rectTransform,new Vector2(-.1f,-.23f),new Vector2(1.1f,-.015f),Vector2.zero,Vector2.zero);
             // Waste
             Image wastePanel = PrototypeUI.CreatePanel(
                 "Waste",
-                transform,
+                _layoutRoot,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(174f, -214f),
-                new Vector2(302f, -36f),
+                new Vector2(174f, -312f),
+                new Vector2(302f, -134f),
                 PrototypeUI.FeltDark);
 
             _wasteRoot = wastePanel.rectTransform;
@@ -384,6 +416,8 @@ namespace BattleSolitaire.Presentation
                 TextAnchor.MiddleCenter,
                 new Color32(160, 190, 186, 255));
 
+            wasteHint.font=FantasyUI.Body;
+            PrototypeUI.SetAnchoredBox(wasteHint.rectTransform,new Vector2(-.1f,-.23f),new Vector2(1.1f,-.015f),Vector2.zero,Vector2.zero);
             // Foundations
             float foundationStart = 430f;
 
@@ -393,13 +427,14 @@ namespace BattleSolitaire.Presentation
 
                 Image slot = PrototypeUI.CreatePanel(
                     "Foundation_" + suit,
-                    transform,
+                    _layoutRoot,
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
-                    new Vector2(foundationStart + i * 148f, -214f),
-                    new Vector2(foundationStart + i * 148f + CardWidth, -36f),
-                    new Color32(12, 53, 45, 255));
+                    new Vector2(foundationStart + i * 148f, -312f),
+                    new Vector2(foundationStart + i * 148f + CardWidth, -134f),
+                    new Color32(12, 53, 45, 80));
 
+                FantasyUI.Frame(slot.transform,new Color32(147,178,143,255));
                 _foundationRoots[i] = slot.rectTransform;
 
                 var drop = slot.gameObject.AddComponent<PileDropTarget>();
@@ -408,8 +443,8 @@ namespace BattleSolitaire.Presentation
                 Text label = PrototypeUI.CreateText(
                     "FoundationHint",
                     slot.transform,
-                    CardView.SuitGlyph(suit),
-                    28,
+                    "A\n" + CardView.SuitGlyph(suit),
+                    39,
                     TextAnchor.MiddleCenter,
                     PrototypeUI.TextMuted,
                     FontStyle.Bold);
@@ -425,12 +460,12 @@ namespace BattleSolitaire.Presentation
 
                 Image lane = PrototypeUI.CreatePanel(
                     "Column_" + column,
-                    transform,
+                    _layoutRoot,
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     new Vector2(x, -1020f),
-                    new Vector2(x + CardWidth, -250f),
-                    new Color32(7, 45, 37, 130));
+                    new Vector2(x + CardWidth, -396f),
+                    new Color32(7, 45, 37, 0));
 
                 _columnRoots[column] = lane.rectTransform;
 

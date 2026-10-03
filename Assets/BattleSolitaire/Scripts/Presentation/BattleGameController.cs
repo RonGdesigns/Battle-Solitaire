@@ -665,6 +665,7 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 PrototypeUI.Background);
 
+            FantasyUI.Backdrop(background.transform);
             background.transform.SetAsFirstSibling();
 
             RectTransform safeRoot = PrototypeUI.CreateRect(

@@ -1,0 +1,26 @@
+{
+  "method": "sRGB contrast using implemented text colors and pixels sampled from final Unity screenshots; representative surfaces, not an exhaustive accessibility audit.",
+  "panel_rgb": [
+    4,
+    11,
+    21
+  ],
+  "felt_rgb": [
+    5,
+    45,
+    18
+  ],
+  "battle_button_rgb": [
+    45,
+    7,
+    18
+  ],
+  "ratios": {
+    "gold_on_sampled_panel": 11.16,
+    "silver_on_sampled_panel": 16.03,
+    "blue_on_sampled_panel": 10.93,
+    "muted_on_sampled_panel": 11.23,
+    "gold_on_sampled_felt": 8.54,
+    "silver_on_battle_button": 14.82
+  }
+}
