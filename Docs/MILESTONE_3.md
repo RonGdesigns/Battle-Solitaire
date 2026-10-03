@@ -52,7 +52,7 @@ Double-tap an exposed tableau or waste card to attempt an automatic foundation m
 - **FOG 25** hides the rival's visible card information at the rules/presentation boundary.
 - **BLOCK 50** obstructs the rival's largest targetable lane.
 
-The AI uses the same battle energy rules and attacks the player.
+The AI uses the same battle energy rules and attacks the player. When the AI is Fogged, it loses reliable card information: its move cadence slows and it skips some move opportunities until Fog expires.
 
 ## AI behavior
 

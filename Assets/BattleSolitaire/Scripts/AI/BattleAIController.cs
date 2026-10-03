@@ -46,8 +46,15 @@ namespace BattleSolitaire.Battle
 
             if (_moveTimer <= 0f)
             {
-                wantsMove = true;
-                ScheduleNextMove();
+                bool fogged = match.Opponent.Disruptions.HasFog;
+
+                // Fog removes reliable card information from the AI. Rather
+                // than letting it read hidden state perfectly, it hesitates
+                // and skips some move opportunities while the effect is active.
+                wantsMove =
+                    !fogged || _random.NextDouble() >= 0.55;
+
+                ScheduleNextMove(fogged ? 1.45f : 1f);
             }
 
             if (_attackThinkTimer <= 0f)
@@ -101,10 +108,11 @@ namespace BattleSolitaire.Battle
             return start;
         }
 
-        private void ScheduleNextMove()
+        private void ScheduleNextMove(float multiplier = 1f)
         {
             _moveTimer =
-                0.7f + (float)_random.NextDouble() * 0.8f;
+                (0.7f + (float)_random.NextDouble() * 0.8f) *
+                multiplier;
         }
     }
 }

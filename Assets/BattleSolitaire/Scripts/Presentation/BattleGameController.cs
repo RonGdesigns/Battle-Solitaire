@@ -59,8 +59,11 @@ namespace BattleSolitaire.Presentation
             Application.targetFrameRate = 60;
             Screen.orientation = ScreenOrientation.Portrait;
 
-            CreateRuntimeUI();
             StartRematch();
+            CreateRuntimeUI();
+
+            _board.Refresh();
+            _hud.Refresh();
         }
 
         private void Update()
