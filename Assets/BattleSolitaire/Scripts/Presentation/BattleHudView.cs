@@ -27,6 +27,12 @@ namespace BattleSolitaire.Presentation
         private GameObject _resultPanel;
         private Text _resultText;
 
+        private float _targetOpponentHealth;
+        private float _targetOpponentProgress;
+        private float _targetPlayerHealth;
+        private float _targetEnergy;
+        private float _targetCombo;
+
         public static BattleHudView Create(
             Transform parent,
             BattleGameController controller)
@@ -47,6 +53,36 @@ namespace BattleSolitaire.Presentation
             return view;
         }
 
+        private void Update()
+        {
+            const float speed = 4.8f;
+
+            _opponentHealth.value = Mathf.MoveTowards(
+                _opponentHealth.value,
+                _targetOpponentHealth,
+                speed * Time.unscaledDeltaTime);
+
+            _opponentProgress.value = Mathf.MoveTowards(
+                _opponentProgress.value,
+                _targetOpponentProgress,
+                speed * Time.unscaledDeltaTime);
+
+            _playerHealth.value = Mathf.MoveTowards(
+                _playerHealth.value,
+                _targetPlayerHealth,
+                speed * Time.unscaledDeltaTime);
+
+            _energy.value = Mathf.MoveTowards(
+                _energy.value,
+                _targetEnergy,
+                speed * Time.unscaledDeltaTime);
+
+            _combo.value = Mathf.MoveTowards(
+                _combo.value,
+                _targetCombo,
+                speed * Time.unscaledDeltaTime);
+        }
+
         public void Refresh()
         {
             if (_controller.Match == null)
@@ -60,23 +96,23 @@ namespace BattleSolitaire.Presentation
                 "   SHIELD " + opponent.Shield +
                 "   BOARD " + Mathf.RoundToInt(opponent.ClearPercentage * 100f) + "%";
 
-            _opponentHealth.value =
+            _targetOpponentHealth =
                 opponent.Health / (float)BattleTuning.MaxHealth;
 
-            _opponentProgress.value = opponent.ClearPercentage;
+            _targetOpponentProgress = opponent.ClearPercentage;
 
             _playerText.text =
                 "YOU   HP " + player.Health +
                 "   SHIELD " + player.Shield +
                 "   ENERGY " + player.Energy + "/100";
 
-            _playerHealth.value =
+            _targetPlayerHealth =
                 player.Health / (float)BattleTuning.MaxHealth;
 
-            _energy.value =
+            _targetEnergy =
                 player.Energy / (float)BattleTuning.MaxEnergy;
 
-            _combo.value = player.Combo.Strength01;
+            _targetCombo = player.Combo.Strength01;
 
             _comboText.text = player.Combo.Count > 0
                 ? "COMBO x" + player.Combo.Count
@@ -121,7 +157,6 @@ namespace BattleSolitaire.Presentation
 
         private void Build()
         {
-            // Opponent strip.
             Image top = PrototypeUI.CreatePanel(
                 "OpponentPanel",
                 transform,
@@ -146,6 +181,22 @@ namespace BattleSolitaire.Presentation
                 new Vector2(1f, 1f),
                 new Vector2(12f, 0f),
                 new Vector2(-12f, -8f));
+
+            Button help = PrototypeUI.CreateButton(
+                "Help",
+                top.transform,
+                "?",
+                PrototypeUI.PanelAlt,
+                PrototypeUI.TextLight);
+
+            PrototypeUI.SetAnchoredBox(
+                help.GetComponent<RectTransform>(),
+                new Vector2(0.90f, 0.66f),
+                new Vector2(0.97f, 0.94f),
+                Vector2.zero,
+                Vector2.zero);
+
+            help.onClick.AddListener(_controller.ShowTutorial);
 
             _opponentText = PrototypeUI.CreateText(
                 "OpponentStats",
@@ -187,7 +238,6 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 Vector2.zero);
 
-            // Player strip.
             Image bottom = PrototypeUI.CreatePanel(
                 "PlayerPanel",
                 transform,
@@ -332,7 +382,6 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 Vector2.zero);
 
-            // Match result overlay.
             Image result = PrototypeUI.CreatePanel(
                 "ResultPanel",
                 transform,

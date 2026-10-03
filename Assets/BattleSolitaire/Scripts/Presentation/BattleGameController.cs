@@ -15,16 +15,23 @@ namespace BattleSolitaire.Presentation
         private SolitaireMoveSolver _aiSolver;
         private BattleBoardView _board;
         private BattleHudView _hud;
+        private BattleFeedback _feedback;
+        private BattleFxView _fx;
+        private TutorialOverlay _tutorial;
 
         private int _matchCounter;
         private float _statusRefreshTimer;
         private string _message = "";
         private float _messageUntil;
+        private BattleMatchState _lastObservedState = BattleMatchState.Running;
 
         public BattleMatch Match { get; private set; }
 
         public string VisibleMessage =>
             Time.unscaledTime <= _messageUntil ? _message : "";
+
+        public bool TutorialOpen =>
+            _tutorial != null && _tutorial.IsOpen;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureRuntime()
@@ -59,17 +66,27 @@ namespace BattleSolitaire.Presentation
             Application.targetFrameRate = 60;
             Screen.orientation = ScreenOrientation.Portrait;
 
+            _feedback = gameObject.AddComponent<BattleFeedback>();
+            _feedback.Initialize();
+
             StartRematch();
             CreateRuntimeUI();
 
             _board.Refresh();
             _hud.Refresh();
+            _tutorial.OpenIfNeeded();
         }
 
         private void Update()
         {
             if (Match == null)
                 return;
+
+            if (TutorialOpen)
+            {
+                _hud.Refresh();
+                return;
+            }
 
             float delta = Time.deltaTime;
             Match.Tick(delta);
@@ -85,9 +102,15 @@ namespace BattleSolitaire.Presentation
 
                     if (action.Move.Success)
                     {
-                        Match.RegisterMove(
+                        BattleMoveOutcome outcome = Match.RegisterMove(
                             BattleSide.Opponent,
                             action.Move);
+
+                        if (outcome.DamageDealt > 0)
+                        {
+                            _feedback.PlayHit();
+                            _fx.ShowIncomingDamage(outcome.DamageDealt);
+                        }
                     }
                 }
 
@@ -105,10 +128,15 @@ namespace BattleSolitaire.Presentation
                             "Rival used " +
                             intent.AttackType.ToString().ToUpperInvariant() +
                             "!");
+
+                        _feedback.PlayAttack();
+                        _fx.ShowAttack(intent.AttackType, true);
                         _board.RefreshStatus();
                     }
                 }
             }
+
+            ObserveMatchResult();
 
             _statusRefreshTimer -= delta;
 
@@ -134,6 +162,7 @@ namespace BattleSolitaire.Presentation
             Match = new BattleMatch(baseSeed, opponentSeed);
             _aiController = new BattleAIController(opponentSeed ^ 173);
             _aiSolver = new SolitaireMoveSolver();
+            _lastObservedState = BattleMatchState.Running;
 
             ShowMessage("Battle started.");
 
@@ -153,10 +182,11 @@ namespace BattleSolitaire.Presentation
 
             if (!changed)
             {
-                ShowMessage("No cards left to draw.");
+                InvalidAction("No cards left to draw.");
                 return;
             }
 
+            _feedback.PlayMove(false);
             _board.Refresh();
         }
 
@@ -242,7 +272,8 @@ namespace BattleSolitaire.Presentation
 
                 if (targetColumn < 0)
                 {
-                    ShowMessage("No rival column can be targeted right now.");
+                    InvalidAction(
+                        "No rival column can be targeted right now.");
                     return;
                 }
             }
@@ -254,7 +285,7 @@ namespace BattleSolitaire.Presentation
 
             if (!success)
             {
-                ShowMessage("Not enough energy.");
+                InvalidAction("Not enough energy.");
                 return;
             }
 
@@ -262,7 +293,15 @@ namespace BattleSolitaire.Presentation
                 type.ToString().ToUpperInvariant() +
                 " launched!");
 
+            _feedback.PlayAttack();
+            _fx.ShowAttack(type, false);
             _hud.Refresh();
+        }
+
+        public void ShowTutorial()
+        {
+            if (_tutorial != null)
+                _tutorial.Open();
         }
 
         public void ShowMessage(string message)
@@ -271,16 +310,31 @@ namespace BattleSolitaire.Presentation
             _messageUntil = Time.unscaledTime + 1.7f;
         }
 
+        public void InvalidAction(string message)
+        {
+            ShowMessage(message);
+            _feedback.PlayInvalid();
+
+            if (_fx != null)
+                _fx.ShowInvalid();
+        }
+
         private bool FinishPlayerMove(MoveResult move)
         {
             if (!move.Success)
             {
-                ShowMessage("That move is not legal.");
+                InvalidAction("That move is not legal.");
                 return false;
             }
 
             BattleMoveOutcome outcome =
                 Match.RegisterMove(BattleSide.Player, move);
+
+            bool foundation =
+                move.FoundationMove;
+
+            _feedback.PlayMove(foundation);
+            _fx.ShowMove(outcome);
 
             if (outcome.Counted)
             {
@@ -295,14 +349,35 @@ namespace BattleSolitaire.Presentation
                 ShowMessage(text);
             }
 
+            ObserveMatchResult();
             _hud.Refresh();
             return true;
+        }
+
+        private void ObserveMatchResult()
+        {
+            if (Match == null || Match.State == _lastObservedState)
+                return;
+
+            _lastObservedState = Match.State;
+
+            if (Match.State == BattleMatchState.PlayerWon)
+            {
+                _feedback.PlayResult(true);
+                _fx.ShowResult(Match.State);
+            }
+            else if (Match.State == BattleMatchState.OpponentWon)
+            {
+                _feedback.PlayResult(false);
+                _fx.ShowResult(Match.State);
+            }
         }
 
         private bool CanPlayerAct()
         {
             return Match != null &&
-                   Match.State == BattleMatchState.Running;
+                   Match.State == BattleMatchState.Running &&
+                   !TutorialOpen;
         }
 
         private bool CanUsePlayerColumn(int column)
@@ -312,7 +387,7 @@ namespace BattleSolitaire.Presentation
 
             if (!Match.CanUseColumn(BattleSide.Player, column))
             {
-                ShowMessage("That column is disrupted.");
+                InvalidAction("That column is disrupted.");
                 return false;
             }
 
@@ -388,12 +463,29 @@ namespace BattleSolitaire.Presentation
 
             background.transform.SetAsFirstSibling();
 
-            _board = BattleBoardView.Create(
+            RectTransform safeRoot = PrototypeUI.CreateRect(
+                "SafeArea",
                 canvasObject.transform,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero);
+
+            safeRoot.gameObject.AddComponent<SafeAreaFitter>();
+
+            _board = BattleBoardView.Create(
+                safeRoot,
                 this);
 
             _hud = BattleHudView.Create(
-                canvasObject.transform,
+                safeRoot,
+                this);
+
+            _fx = BattleFxView.Create(
+                safeRoot);
+
+            _tutorial = TutorialOverlay.Create(
+                safeRoot,
                 this);
         }
     }

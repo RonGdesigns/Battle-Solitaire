@@ -7,7 +7,7 @@ Battle Solitaire is a mobile-first competitive solitaire game prototype built ar
 - Unity 6000.6.3f1
 - Android first
 - Portrait orientation
-- Local player-vs-AI prototype first
+- Local player-vs-AI prototype
 - Online 1v1 and ranked play later
 
 ## Architecture
@@ -17,8 +17,8 @@ Gameplay rules remain separate from Unity presentation.
 - `Core/` — cards, seeded deals, legal solitaire moves, foundations, tableau state, win detection.
 - `Battle/` — HP, energy, shield, combo timing, attacks, disruption state, damage, match results.
 - `AI/` — human-like action timing plus the first solitaire move solver.
-- `Presentation/` — runtime-generated mobile board, card input, HUD, attacks, results.
-- `Editor/` — one-click playable-scene setup.
+- `Presentation/` — mobile board, input, HUD, tutorial, feedback, attacks, results, safe-area handling.
+- `Editor/` — scene setup and Android play-test build tools.
 
 ## Completed
 
@@ -34,40 +34,49 @@ Gameplay rules remain separate from Unity presentation.
 - perfect-clear detection
 
 ### Milestone 2 — Battle systems
-- 100 HP battle state
-- 100 max energy
-- shield system
-- 2.5 second full combo window / 5 second expiration
-- Lock attack
-- Fog attack
-- Blocker attack
+- HP, energy, shield, combo timing
+- Lock, Fog and Blocker
 - progress-based damage
-- opponent progress reporting
-- perfect-clear battle victory
-- AI attack pacing
-- anti-energy-farming rule for foundation rollback moves
+- battle win states
+- opponent progress
+- anti-energy-farming rules
 
 ### Milestone 3 — Playable Unity prototype
 - portrait mobile battle board
 - generated card visuals
-- tap and drag interaction
-- stock/waste/foundation/tableau controls
-- player and opponent HUD
-- attack buttons and disruption overlays
+- tap and drag controls
+- battle HUD
 - AI solitaire move solver
-- local player-vs-AI match loop
-- victory/defeat/rematch flow
-- Editor command to generate the playable Battle scene
+- local match/rematch flow
 
-## Play the prototype
+### Milestone 4 — Game feel + Android play-test
+- safe-area mobile layout
+- smoother HUD animation
+- card selection/drag polish
+- generated move/attack/hit/result audio
+- mobile haptics
+- battle flash/callout effects
+- first-run tutorial with replayable help
+- one-click Android play-test APK builder
+
+## Play in Unity
 
 1. Open the repo in Unity 6000.6.3f1.
-2. Wait for scripts/packages to finish importing.
-3. Select **Battle Solitaire > Setup Playable Prototype**.
+2. Let Unity finish compiling/importing.
+3. Open **Battle Solitaire > Open Battle Scene**.
 4. Press **Play**.
 
-See `Docs/MILESTONE_3.md` for controls and current limitations.
+If the scene has not been generated yet, use **Battle Solitaire > Setup Playable Prototype** first.
 
-## Next
+## Build an Android play-test APK
 
-Milestone 4 should focus on game feel and mobile delivery: animation, sound/haptics, polished card art, onboarding, stronger AI/fairness tools, and a repeatable Android APK build path before online multiplayer.
+1. Install Android Build Support, SDK/NDK Tools and OpenJDK for Unity 6000.6.3f1 through Unity Hub.
+2. Open the project.
+3. Choose **Battle Solitaire > Android > Build Play-Test APK**.
+4. Unity creates:
+
+`Builds/Android/BattleSolitaire-M4-Playtest.apk`
+
+This is a development/test build, not a Play Store release build.
+
+See `Docs/MILESTONE_4.md` for details.

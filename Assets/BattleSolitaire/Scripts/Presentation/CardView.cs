@@ -31,6 +31,7 @@ namespace BattleSolitaire.Presentation
         private bool _dropHandled;
         private bool _selected;
         private bool _fogged;
+        private float _targetScale = 1f;
 
         public CardState Card { get; private set; }
         public CardSourceKind SourceKind { get; private set; }
@@ -59,6 +60,10 @@ namespace BattleSolitaire.Presentation
             _background = gameObject.AddComponent<Image>();
             _canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
+            Shadow shadow = gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.28f);
+            shadow.effectDistance = new Vector2(4f, -5f);
+
             _label = PrototypeUI.CreateText(
                 "CardLabel",
                 transform,
@@ -71,7 +76,21 @@ namespace BattleSolitaire.Presentation
             _label.rectTransform.offsetMin = new Vector2(5f, 5f);
             _label.rectTransform.offsetMax = new Vector2(-5f, -5f);
 
+            transform.localScale = new Vector3(0.96f, 0.96f, 1f);
             ApplyVisuals();
+        }
+
+        private void Update()
+        {
+            float desired =
+                _dragging ? 1.08f : (_selected ? 1.055f : _targetScale);
+
+            float next = Mathf.Lerp(
+                transform.localScale.x,
+                desired,
+                1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
+
+            transform.localScale = new Vector3(next, next, 1f);
         }
 
         public void SetSelected(bool selected)
@@ -112,6 +131,7 @@ namespace BattleSolitaire.Presentation
             CurrentDrag = this;
             _startPosition = _rect.position;
             _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.alpha = 0.93f;
             transform.SetAsLastSibling();
         }
 
@@ -130,6 +150,7 @@ namespace BattleSolitaire.Presentation
 
             _dragging = false;
             _canvasGroup.blocksRaycasts = true;
+            _canvasGroup.alpha = 1f;
 
             if (CurrentDrag == this)
                 CurrentDrag = null;
