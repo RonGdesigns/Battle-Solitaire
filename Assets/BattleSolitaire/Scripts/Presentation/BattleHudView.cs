@@ -55,7 +55,9 @@ namespace BattleSolitaire.Presentation
             _targetCombo=player.Combo.Strength01;_targetOpponentProgress=opponent.ClearPercentage;
             bool running=_controller.Match.State==BattleMatchState.Running;
             _lockButton.interactable=running&&player.Energy>=BattleTuning.LockCost;
-            _fogButton.interactable=running&&player.Energy>=BattleTuning.FogCost;
+            _fogButton.interactable=running&&player.Energy>=BattleTuning.FogCost&&_controller.Match.Opponent.Disruptions.FogProtectionRemaining<=0f;
+            float fogCooldown=_controller.Match.Opponent.Disruptions.FogProtectionRemaining;
+            _fogButton.transform.Find("Cost").GetComponent<Text>().text=fogCooldown>0?"READY IN "+Mathf.CeilToInt(fogCooldown)+"s":BattleTuning.FogCost+" ENERGY";
             _blockerButton.interactable=running&&player.Energy>=BattleTuning.BlockerCost;
             _resultPanel.SetActive(!running);
             if(!running){_resultText.text=_controller.Match.State==BattleMatchState.PlayerWon?"VICTORY":_controller.Match.State==BattleMatchState.OpponentWon?"DEFEAT":"DRAW";_resultPanel.transform.SetAsLastSibling();}
@@ -95,7 +97,7 @@ namespace BattleSolitaire.Presentation
             _combo=Bar("Combo",transform,FantasyUI.Gold,.73f,.147f,.88f,.158f);
             _comboText=FantasyUI.Label("ComboText",transform,"",23,FantasyUI.Gold,.90f,.140f,.975f,.164f);
             _lockButton=Ability("LockButton","LOCK",BattleTuning.LockCost,FantasySymbol.Lock,.045f,"Stop a rival column.");
-            _fogButton=Ability("FogButton","FOG",BattleTuning.FogCost,FantasySymbol.Fog,.356f,"Obscure rival cards.");
+            _fogButton=Ability("FogButton","FOG",BattleTuning.FogCost,FantasySymbol.Fog,.356f,"Hide foundations for 2s.");
             _blockerButton=Ability("BlockerButton","BLOCK",BattleTuning.BlockerCost,FantasySymbol.Shield,.667f,"Block a rival column.");
             _lockButton.onClick.AddListener(()=>_controller.UsePlayerAttack(BattleAttackType.Lock));
             _fogButton.onClick.AddListener(()=>_controller.UsePlayerAttack(BattleAttackType.Fog));

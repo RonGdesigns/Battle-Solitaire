@@ -24,6 +24,8 @@ namespace BattleSolitaire.Battle
 
         public float FogTimeRemaining { get; private set; }
 
+        public float FogProtectionRemaining { get; private set; } = BattleTuning.FogOpeningGraceSeconds;
+
         public bool HasFog => FogTimeRemaining > 0f;
         public IReadOnlyList<BlockerEffect> Blockers => _blockers;
 
@@ -39,6 +41,7 @@ namespace BattleSolitaire.Battle
             }
 
             FogTimeRemaining = Math.Max(0f, FogTimeRemaining - deltaTime);
+            FogProtectionRemaining = Math.Max(0f, FogProtectionRemaining - deltaTime);
 
             for (int i = _blockers.Count - 1; i >= 0; i--)
             {
@@ -95,6 +98,13 @@ namespace BattleSolitaire.Battle
         public void AddFog(float duration)
         {
             FogTimeRemaining = Math.Max(FogTimeRemaining, duration);
+            FogProtectionRemaining = BattleTuning.FogCooldownSeconds;
+        }
+
+        public void RestoreFog(float remaining, float protection)
+        {
+            FogTimeRemaining = remaining;
+            FogProtectionRemaining = protection;
         }
 
         public void AddBlocker(

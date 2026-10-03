@@ -1,0 +1,21 @@
+Battle Solitaire 0.9.0 (9)
+Verified October 3, 2026
+
+Unity: 6000.6.3f1
+MOBILE_REVIEW_PASS
+PHONE_FEEDBACK_REVIEW_PASS
+FRONT_END_REVIEW_PASS
+M9_APK_BUILD_PASS
+
+Package: com.rgdevelops.battlesolitaire
+Minimum API: 26 (Android 8.0)
+Target API: 36
+Architecture: arm64-v8a
+Development APK: debug signed
+apksigner verification: passed, signature scheme v2
+Signing certificate matches the 0.8.0 APK.
+Size: 44,126,998 bytes
+SHA-256: 7A12164F25E72E98C045A6D8B54B78DEA376D2F52CE06BAE559B6A82EB7EBC22
+
+Physical phone retest remains pending.
+Google Drive upload remains pending identification of the It's Ron DG destination.

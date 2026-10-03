@@ -25,7 +25,9 @@ namespace BattleSolitaire.Battle
         public const float LockDurationSeconds = 3f;
 
         public const int FogCost = 25;
-        public const float FogDurationSeconds = 4f;
+        public const float FogDurationSeconds = 2f;
+        public const float FogCooldownSeconds = 20f;
+        public const float FogOpeningGraceSeconds = 15f;
 
         public const int BlockerCost = 50;
         public const int BlockerMovesToClear = 3;

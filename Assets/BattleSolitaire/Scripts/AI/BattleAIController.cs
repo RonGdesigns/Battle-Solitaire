@@ -117,10 +117,7 @@ namespace BattleSolitaire.Battle
                         wantsAttack = true;
 
                         bool preferLock =
-                            Difficulty ==
-                                BattleDifficulty.Expert
-                                ? NextSample() < 0.65
-                                : NextSample() < 0.50;
+                            match.Player.Disruptions.FogProtectionRemaining > 0f || NextSample() < 0.85;
 
                         if (preferLock)
                         {

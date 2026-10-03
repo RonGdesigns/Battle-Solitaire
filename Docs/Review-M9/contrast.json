@@ -1,0 +1,97 @@
+[
+  {
+    "label": "Tutorial body on navy",
+    "image": "tutorial-page-4.png",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      4,
+      11,
+      22
+    ],
+    "sample": [
+      185,
+      485
+    ],
+    "ratio": 16.02
+  },
+  {
+    "label": "Quit dialog heading on navy",
+    "image": "quit-confirmation-phone.png",
+    "foreground": [
+      226,
+      190,
+      120
+    ],
+    "background": [
+      4,
+      11,
+      22
+    ],
+    "sample": [
+      194,
+      240
+    ],
+    "ratio": 11.15
+  },
+  {
+    "label": "Title gold over castle",
+    "image": "title-phone.png",
+    "foreground": [
+      226,
+      190,
+      120
+    ],
+    "background": [
+      9,
+      19,
+      32
+    ],
+    "sample": [
+      285,
+      108
+    ],
+    "ratio": 10.55
+  },
+  {
+    "label": "Red card suit on paper",
+    "image": "all-suits-phone.png",
+    "foreground": [
+      178,
+      43,
+      55
+    ],
+    "background": [
+      248,
+      244,
+      233
+    ],
+    "sample": [
+      26,
+      339
+    ],
+    "ratio": 5.8
+  },
+  {
+    "label": "Black card suit on paper",
+    "image": "all-suits-phone.png",
+    "foreground": [
+      18,
+      31,
+      49
+    ],
+    "background": [
+      248,
+      244,
+      233
+    ],
+    "sample": [
+      26,
+      339
+    ],
+    "ratio": 15.09
+  }
+]

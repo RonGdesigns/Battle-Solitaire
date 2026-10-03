@@ -124,3 +124,14 @@ See `Docs/MILESTONE_4.md` for details.
 
 See `Docs/MILESTONE_8.md` for verification and limitations, and
 `Docs/PHONE-PLAYTEST.md` for the physical-device checklist.
+
+### Milestone 9 — First phone-playtest fixes
+- title screen and matching fantasy tutorial
+- drawn card suits that do not depend on Android font glyphs
+- full-column drops, including the bottom of long card runs
+- any ace in any empty foundation position, with saved layout
+- shorter foundation-only Fog with opening grace and cooldown
+- confirmed Quit Battle returns to the title without closing the app
+- Android playtest version 0.9.0; update-compatible signing
+
+See `Docs/MILESTONE_9.md` for evidence and `Docs/PHONE-PLAYTEST.md` for retesting.

@@ -60,6 +60,23 @@ namespace BattleSolitaire.EditorTools
                 ? args[outputIndex + 1] : "Temp/FrontEndReview");
             Directory.CreateDirectory(output);
             var report = new List<string>();
+            Check(controller.TitleOpen,"App opens at the title screen");
+            var title=UnityEngine.Object.FindAnyObjectByType<TitleScreenView>();
+            var bootCanvas=title.GetComponentInParent<Canvas>();
+            Capture(bootCanvas,null,output,"title-phone",390,844,report);
+            Capture(bootCanvas,null,output,"title-desktop",1280,1920,report);
+            title.transform.Find("TitleHelp").GetComponent<Button>().onClick.Invoke();
+            var help=UnityEngine.Object.FindAnyObjectByType<TutorialOverlay>();
+            for(int page=0;page<4;page++)
+            {
+                Capture(bootCanvas,null,output,"tutorial-page-"+(page+1),390,844,report);
+                var body=help.GetComponentsInChildren<Text>().First(t=>t.name=="TutorialBody");
+                Check(body.preferredHeight<=body.rectTransform.rect.height+1,"Tutorial body fits on phone");
+                help.GetComponentsInChildren<Button>().First(b=>b.name=="Next").onClick.Invoke();
+            }
+            Check(!controller.TutorialOpen && controller.TitleOpen,"Tutorial returns to title");
+            controller.ShowTutorial();Capture(bootCanvas,null,output,"tutorial-desktop",1280,1920,report);help.CloseAndRemember();
+            title.transform.Find("PlayButton").GetComponent<Button>().onClick.Invoke();
             var menu = UnityEngine.Object.FindAnyObjectByType<BattleFrontEndView>();
             var canvas = menu.GetComponentInParent<Canvas>();
             Check(PlayerSettings.defaultInterfaceOrientation == UIOrientation.Portrait, "Portrait project setting");
@@ -117,6 +134,7 @@ namespace BattleSolitaire.EditorTools
             Capture(canvas, null, output, "battle-hud", 1080, 1920, report);
             Capture(canvas, null, output, "battle-phone", 390, 844, report);
             MobileReview.Run(controller,(name,width,height)=>Capture(canvas,null,output,name,width,height,report));
+            PhoneFeedbackReview.Run(controller,canvas,(name,width,height)=>Capture(canvas,null,output,name,width,height,report));
             controller.ShowTutorial();
             Check(controller.TutorialOpen, "Tutorial opens");
             UnityEngine.Object.FindAnyObjectByType<TutorialOverlay>().CloseAndRemember();
@@ -145,6 +163,7 @@ namespace BattleSolitaire.EditorTools
             Capture(canvas, menu, output, "career-after-win", 1080, 1920, report);
             report.Add("PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, legal/illegal drag dispatch, result return, career refresh, portrait settings, nonempty frame/icon meshes.");
             report.Add("PASS: mobile lifecycle, settings, complete checkpoint round trip, AI scheduling, corrupt-save fallback, replacement confirmation, long-stack bounds.");
+            report.Add("PASS: title and tutorial flow, portable suit meshes, full-column pointer drops, single/run/invalid drops, all 16 ace/slot combinations, foundation persistence, bounded Fog, quit/cancel.");
             report.Add("Android build utility compiled with the editor assembly. No APK/device test in this review.");
             File.WriteAllLines(Path.Combine(output, "verification.txt"), report);
         }
@@ -211,7 +230,7 @@ namespace BattleSolitaire.EditorTools
             Canvas.ForceUpdateCanvases();
             foreach (Graphic g in canvas.GetComponentsInChildren<Graphic>()) g.SetAllDirty();
             Canvas.ForceUpdateCanvases();
-            foreach (Graphic g in canvas.GetComponentsInChildren<Graphic>().Where(g=>(g is FantasyFrame || g is FantasyIcon) && g.isActiveAndEnabled && !g.canvasRenderer.cull && g.rectTransform.rect.width>0 && g.rectTransform.rect.height>0))
+            foreach (Graphic g in canvas.GetComponentsInChildren<Graphic>().Where(g=>(g is FantasyFrame || g is FantasyIcon || g is SuitIcon) && g.isActiveAndEnabled && !g.canvasRenderer.cull && g.rectTransform.rect.width>0 && g.rectTransform.rect.height>0))
                 Check(g.canvasRenderer.GetMesh()!=null && g.canvasRenderer.GetMesh().vertexCount>0,"Metal frame/icon renders: "+g.name);
             foreach (Text corner in canvas.GetComponentsInChildren<Text>().Where(t=>t.name=="TopCorner" && !string.IsNullOrEmpty(t.text)))
                 Check(corner.preferredHeight<=corner.rectTransform.rect.height+1,"Card rank and suit fit");

@@ -22,6 +22,9 @@ namespace BattleSolitaire.Presentation
         private TargetingOverlay _targeting;
 
         private PauseOverlay _pause;
+        private TitleScreenView _titleScreen;
+        public bool TitleOpen => _titleScreen != null && _titleScreen.IsOpen;
+        public int[] FoundationSlots { get; private set; } = new[]{-1,-1,-1,-1};
         private SavedMatch _savedMatch;
         private bool _paused, _backgrounded, _sessionStarted;
         private float _checkpointTimer;
@@ -110,7 +113,7 @@ namespace BattleSolitaire.Presentation
 
             _board.Refresh();
             _hud.Refresh();
-            ShowFrontEnd();
+            ShowTitleScreen();
         }
 
         private void Update()
@@ -120,7 +123,8 @@ namespace BattleSolitaire.Presentation
 
             if (Input.GetKeyDown(KeyCode.Escape))
             {
-                if (_pause != null && _pause.IsOpen) ResumeBattle();
+                if (TutorialOpen) _tutorial.CloseAndRemember();
+                else if (_pause != null && _pause.IsOpen) _pause.Back();
                 else if (TargetingOpen) _targeting.Close();
                 else OpenPause();
             }
@@ -223,6 +227,7 @@ namespace BattleSolitaire.Presentation
             if (_frontEnd != null)
                 _frontEnd.Hide();
 
+            _titleScreen?.Hide();
             _menuOpen = false;
             _savedMatch = null;
             MatchSaveStore.Clear();
@@ -233,9 +238,35 @@ namespace BattleSolitaire.Presentation
                 _tutorial.OpenIfNeeded();
         }
 
+        public void ShowTitleScreen()
+        {
+            if (_sessionStarted) SaveCheckpoint();
+            _menuOpen=true; _paused=false;
+            CardView.CancelCurrentDrag(); _targeting?.Close(); _pause?.Close();
+            _frontEnd?.Hide(); _titleScreen?.Show();
+        }
+
+        public void QuitCurrentBattle()
+        {
+            CardView.CancelCurrentDrag(); _targeting?.Close();
+            MatchSaveStore.Clear(); _savedMatch=null; _sessionStarted=false;
+            RecoveryNotice="Battle ended.";
+            ShowTitleScreen();
+        }
+
+        public void EnsureFoundationSlots()
+        {
+            var foundations=Match.Player.Game.Foundations;
+            for(int i=0;i<4;i++) if(FoundationSlots[i]>=0 && foundations[(Suit)FoundationSlots[i]].Count==0) FoundationSlots[i]=-1;
+            for(int suit=0;suit<4;suit++)
+                if(foundations[(Suit)suit].Count>0 && Array.IndexOf(FoundationSlots,suit)<0)
+                { int slot=Array.IndexOf(FoundationSlots,-1); if(slot>=0) FoundationSlots[slot]=suit; }
+        }
+
         public void ShowFrontEnd()
         {
             if (_sessionStarted) SaveCheckpoint();
+            _titleScreen?.Hide();
             _menuOpen = true;
             _paused = false;
             if (_pause != null) _pause.Close();
@@ -247,6 +278,7 @@ namespace BattleSolitaire.Presentation
         public void StartRematch()
         {
             _matchCounter++;
+            FoundationSlots = new[]{-1,-1,-1,-1};
             _paused = false;
             _sessionStarted = true;
             _savedMatch = null;
@@ -441,6 +473,8 @@ namespace BattleSolitaire.Presentation
                 return;
             }
 
+            if(type==BattleAttackType.Fog && Match.Opponent.Disruptions.FogProtectionRemaining>0)
+            { InvalidAction("Fog is recharging. Try another ability."); return; }
             bool success =
                 Match.TryAttack(
                     BattleSide.Player,
@@ -670,6 +704,7 @@ namespace BattleSolitaire.Presentation
             return new SavedMatch {
                 playerBattler=(int)_playerBattler.Id, opponentBattler=(int)_opponentBattler.Id,
                 difficulty=(int)_aiController.Difficulty, maxCombo=_playerMatchMaxCombo,
+                foundationSlots=(int[])FoundationSlots.Clone(),
                 player=SavedParticipant.Capture(Match.Player), opponent=SavedParticipant.Capture(Match.Opponent), ai=_aiController.Capture()
             };
         }
@@ -691,9 +726,10 @@ namespace BattleSolitaire.Presentation
                 var restored=new BattleMatch(_savedMatch.player.seed,_savedMatch.opponent.seed,BuildModifiers(_playerBattler.Id),BuildModifiers(_opponentBattler.Id));
                 _savedMatch.player.Restore(restored.Player); _savedMatch.opponent.Restore(restored.Opponent);
                 var ai=new BattleAIController(_savedMatch.ai.seed,(BattleDifficulty)_savedMatch.difficulty); ai.Restore(_savedMatch.ai);
+                FoundationSlots=_savedMatch.foundationSlots!=null?(int[])_savedMatch.foundationSlots.Clone():new[]{-1,-1,-1,-1};
                 Match=restored; _aiController=ai; _aiSolver=new SolitaireMoveSolver();
                 _playerMatchMaxCombo=_savedMatch.maxCombo; _matchRecorded=false; _lastObservedState=BattleMatchState.Running;
-                _sessionStarted=true; _menuOpen=false; _frontEnd.Hide();
+                _sessionStarted=true; _menuOpen=false; _frontEnd.Hide(); _titleScreen?.Hide();
                 ShowMessage("Battle restored.");
                 _board.Refresh(); _hud.Refresh(); OpenPause();
             }
@@ -798,6 +834,7 @@ namespace BattleSolitaire.Presentation
             _frontEnd = BattleFrontEndView.Create(
                 safeRoot,
                 this);
+            _titleScreen = TitleScreenView.Create(safeRoot, this);
             _pause = PauseOverlay.Create(safeRoot, this);
             if(EventSystem.current!=null) EventSystem.current.pixelDragThreshold=Mathf.Clamp(Mathf.RoundToInt(Screen.dpi>0?Screen.dpi*.06f:12),10,35);
         }

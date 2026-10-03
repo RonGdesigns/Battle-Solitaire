@@ -17,6 +17,7 @@ namespace BattleSolitaire.Presentation
         IPointerClickHandler,
         IBeginDragHandler,
         IDragHandler,
+        IDropHandler,
         IEndDragHandler
     {
         public static CardView CurrentDrag { get; private set; }
@@ -26,6 +27,7 @@ namespace BattleSolitaire.Presentation
         private CanvasGroup _canvasGroup;
         private Image _background;
         private Text _topCorner;
+        private SuitIcon _topSuit, _bottomSuit, _centerSuit;
         private Text _center;
         private Text _bottomCorner;
         private Image _innerFrame;
@@ -34,6 +36,7 @@ namespace BattleSolitaire.Presentation
         private Vector3 _startPosition;
         private bool _dragging;
         private bool _dropHandled;
+        private bool _dropAttempted;
         private bool _selected;
         private bool _fogged;
         private float _targetScale = 1f;
@@ -159,6 +162,12 @@ namespace BattleSolitaire.Presentation
                 Vector2.zero,
                 Vector2.zero);
 
+            _topCorner.fontSize=32; _bottomCorner.fontSize=28;
+            FantasyUI.Box(_topCorner.rectTransform,.075f,.75f,.46f,.99f);
+            FantasyUI.Box(_bottomCorner.rectTransform,.60f,.01f,.94f,.24f);
+            _topSuit=SuitIcon.Create("TopSuit",transform,Card.Suit,.45f,.77f,.72f,.98f);
+            _bottomSuit=SuitIcon.Create("BottomSuit",transform,Card.Suit,.30f,.025f,.57f,.235f);
+            _centerSuit=SuitIcon.Create("CenterSuit",transform,Card.Suit,.20f,.26f,.80f,.72f);
             _topCorner.font=FantasyUI.Body;
             _bottomCorner.font=FantasyUI.Body;
 
@@ -215,6 +224,7 @@ namespace BattleSolitaire.Presentation
         {
             _dropHandled = true;
         }
+        public void MarkDropAttempted() { _dropAttempted=true; }
 
         public void OnPointerClick(PointerEventData eventData)
         {
@@ -232,6 +242,7 @@ namespace BattleSolitaire.Presentation
 
             _dragging = true;
             _dropHandled = false;
+            _dropAttempted = false;
             CurrentDrag = this;
             _startPosition = _rect.position;
             _canvasGroup.blocksRaycasts = false;
@@ -248,11 +259,23 @@ namespace BattleSolitaire.Presentation
             _rect.position = eventData.position+fingerOffset;
         }
 
+        public void OnDrop(PointerEventData eventData)
+        {
+            CardView source=CurrentDrag;
+            if(source==null || source==this) return;
+            source.MarkDropAttempted();
+            bool moved=SourceKind==CardSourceKind.Tableau
+                ? _board.TryMoveCardToTableau(source,Column)
+                : SourceKind==CardSourceKind.Foundation && _board.TryMoveCardToFoundation(source,FoundationSuit);
+            if(moved) source.MarkDropHandled();
+        }
+
         public void OnEndDrag(PointerEventData eventData)
         {
             if (!_dragging)
                 return;
 
+            if(!_dropHandled && !_dropAttempted) _dropHandled=_board.TryDropAtPosition(this,eventData.position,eventData.pressEventCamera);
             _dragging = false;
             _canvasGroup.blocksRaycasts = true;
             _canvasGroup.alpha = 1f;
@@ -271,6 +294,8 @@ namespace BattleSolitaire.Presentation
 
         private void ApplyVisuals()
         {
+            bool suitsVisible=Card!=null && Card.IsFaceUp && !_fogged;
+            if(_topSuit!=null) { _topSuit.gameObject.SetActive(suitsVisible); _bottomSuit.gameObject.SetActive(suitsVisible); _centerSuit.gameObject.SetActive(suitsVisible && !IsFaceCard(Card.Rank)); }
             bool courtVisible=Card != null && Card.IsFaceUp && !_fogged && IsFaceCard(Card.Rank);
             if(_courtArt!=null)_courtArt.gameObject.SetActive(courtVisible);
             if (Card == null)
@@ -330,9 +355,10 @@ namespace BattleSolitaire.Presentation
             string rank = RankLabel(Card.Rank);
             string suit = SuitGlyph(Card.Suit);
 
-            _topCorner.text = rank + "\n" + suit;
-            _bottomCorner.text = rank + " " + suit;
-            _center.text = IsFaceCard(Card.Rank) ? "" : suit;
+            _topCorner.text = rank;
+            _bottomCorner.text = rank;
+            _center.text = "";
+            _topSuit.color=ink; _bottomSuit.color=ink; _centerSuit.color=ink;
 
             _center.fontSize =
                 IsFaceCard(Card.Rank) ? 42 : 56;

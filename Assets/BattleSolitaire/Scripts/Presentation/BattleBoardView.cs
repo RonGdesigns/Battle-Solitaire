@@ -109,9 +109,12 @@ namespace BattleSolitaire.Presentation
                     Vector2.zero);
             }
 
+            _controller.EnsureFoundationSlots();
             for (int i = 0; i < _foundationRoots.Length; i++)
             {
-                Suit suit = (Suit)i;
+                int assigned=_controller.FoundationSlots[i];
+                if(assigned<0) continue;
+                Suit suit = (Suit)assigned;
                 List<CardState> foundation = game.Foundations[suit];
 
                 if (foundation.Count == 0)
@@ -167,7 +170,7 @@ namespace BattleSolitaire.Presentation
             bool fogged = disruption.HasFog;
 
             for (int i = 0; i < _renderedCards.Count; i++)
-                _renderedCards[i].SetFogged(fogged);
+                _renderedCards[i].SetFogged(fogged && _renderedCards[i].SourceKind==CardSourceKind.Foundation);
 
             for (int column = 0; column < 7; column++)
             {
@@ -272,10 +275,39 @@ namespace BattleSolitaire.Presentation
                 TryMoveCardToTableau(_selected, column);
         }
 
-        public void FoundationSlotTapped(Suit suit)
+        public void FoundationSlotTapped(int slot)
         {
             if (_selected != null)
-                TryMoveCardToFoundation(_selected, suit);
+                TryMoveCardToFoundationSlot(_selected, slot);
+        }
+
+        public bool TryDropAtPosition(CardView source,Vector2 screenPosition,Camera eventCamera)
+        {
+            for(int i=0;i<4;i++)
+                if(RectTransformUtility.RectangleContainsScreenPoint(_foundationRoots[i],screenPosition,eventCamera))
+                    return TryMoveCardToFoundationSlot(source,i);
+            // The entire lane, including the space below its last card, accepts a drop.
+            for(int column=0;column<7;column++)
+                if(RectTransformUtility.RectangleContainsScreenPoint(_columnRoots[column],screenPosition,eventCamera))
+                    return TryMoveCardToTableau(source,column);
+            return false;
+        }
+
+        public bool TryMoveCardToFoundationSlot(CardView source,int slot)
+        {
+            if(source==null || source.Card==null || slot<0 || slot>3) return false;
+            _controller.EnsureFoundationSlots();
+            int assigned=_controller.FoundationSlots[slot];
+            if(assigned>=0 && assigned!=(int)source.Card.Suit)
+            { _controller.InvalidAction("Build each foundation upward in the same suit."); return false; }
+            if(assigned<0 && source.Card.Rank!=Rank.Ace)
+            { _controller.InvalidAction("Start an empty foundation with any ace."); return false; }
+            int existing=System.Array.IndexOf(_controller.FoundationSlots,(int)source.Card.Suit);
+            if(existing>=0 && existing!=slot) return false;
+            _controller.FoundationSlots[slot]=(int)source.Card.Suit;
+            bool success=MoveCardToFoundation(source,source.Card.Suit);
+            if(!success) _controller.FoundationSlots[slot]=assigned;
+            return success;
         }
 
         public bool TryMoveCardToTableau(CardView source, int destinationColumn)
@@ -312,7 +344,16 @@ namespace BattleSolitaire.Presentation
             return success;
         }
 
-        public bool TryMoveCardToFoundation(CardView source, Suit targetSuit)
+        public bool TryMoveCardToFoundation(CardView source,Suit targetSuit)
+        {
+            if(source==null || source.Card.Suit!=targetSuit) return false;
+            _controller.EnsureFoundationSlots();
+            int slot=System.Array.IndexOf(_controller.FoundationSlots,(int)targetSuit);
+            if(slot<0) slot=System.Array.IndexOf(_controller.FoundationSlots,-1);
+            return TryMoveCardToFoundationSlot(source,slot);
+        }
+
+        private bool MoveCardToFoundation(CardView source, Suit targetSuit)
         {
             if (source == null ||
                 source.Card == null ||
@@ -431,7 +472,7 @@ namespace BattleSolitaire.Presentation
                 Suit suit = (Suit)i;
 
                 Image slot = PrototypeUI.CreatePanel(
-                    "Foundation_" + suit,
+                    "Foundation_" + i,
                     _layoutRoot,
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
@@ -443,12 +484,12 @@ namespace BattleSolitaire.Presentation
                 _foundationRoots[i] = slot.rectTransform;
 
                 var drop = slot.gameObject.AddComponent<PileDropTarget>();
-                drop.Initialize(this, DropTargetKind.Foundation, -1, suit);
+                drop.Initialize(this, DropTargetKind.Foundation, i, suit);
 
                 Text label = PrototypeUI.CreateText(
                     "FoundationHint",
                     slot.transform,
-                    "A\n" + CardView.SuitGlyph(suit),
+                    "A",
                     39,
                     TextAnchor.MiddleCenter,
                     PrototypeUI.TextMuted,
@@ -527,7 +568,7 @@ namespace BattleSolitaire.Presentation
                 column,
                 index,
                 foundationSuit,
-                _controller.Match.Player.Disruptions.HasFog);
+                _controller.Match.Player.Disruptions.HasFog && source==CardSourceKind.Foundation);
 
             _dynamicObjects.Add(go);
             _renderedCards.Add(view);

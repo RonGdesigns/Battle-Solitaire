@@ -1,23 +1,15 @@
-# Battle Solitaire 0.8.0 — phone playtest
+# Battle Solitaire 0.9.0 — phone retest
 
-This development APK targets Android 8.0 or later on ARM64 devices. It is a local player-versus-AI build.
+Install `BattleSolitaire-M9-Playtest.apk` as an update to 0.8.0. Keep the existing installation so career progress and its saved match remain available.
 
-## Install
+1. Launch the app. It should start on the new title screen. Try How to Play, move backward and forward, and close it.
+2. Start a battle. Confirm clubs, diamonds, hearts, and spades are visible on cards, including the exposed edges of overlapping cards.
+3. Build a long run. Drop the next card directly on its bottom card, then try the space below the stack. Also drag a valid run of several cards and try an invalid same-color move.
+4. Place aces into different empty foundation positions. Follow with the matching twos. Save & Loadout, then Continue: the same foundation positions should remain.
+5. Watch Fog: it should leave the tableau and waste readable, hide only foundation cards for two seconds, and have a 20-second cooldown. New matches have a 15-second opening grace period.
+6. Open Pause > Quit Battle. Choose Keep Current Battle first. Then repeat and confirm Quit Battle. The app should return to the title screen, remove that unfinished match, and keep your career stats.
+7. Check that Save & Loadout still preserves a match, and that closing/reopening the app restores it through Continue.
 
-Download `BattleSolitaire-M8-Playtest.apk` from your Google Drive to your phone, open it, and allow installation from that download app if Android asks. Launch Battle Solitaire. Keep an existing installation when Android offers an update; uninstalling removes its local career and saved battle.
+Report your phone model, Android version, and any failed step. A short recording of a rejected drop is especially useful because it shows where your finger and card land.
 
-## Ten-minute check
-
-1. Choose a battler and difficulty, then start a battle. Check the top and bottom edges around your camera cutout and gesture bar.
-2. Draw cards, tap a legal move, and drag cards between columns. Try a long stack and a rejected move. Cards should return cleanly after an invalid drop.
-3. Open **Pause**. Wait ten seconds. Neither opponent actions nor battle timers should advance. Resume and confirm play continues.
-4. Try **Sound**, **Vibration**, and **Reduced Motion**. Reopen settings to check that your choices remain.
-5. Start dragging a card, then switch to another app. Return: the drag should be canceled and the battle should be paused.
-6. Choose **Save & Loadout**, change the selected battler, then choose **Continue**. The original battle, battler, cards, HP, energy, and disruptions should return paused.
-7. While paused, close the app from the recent-apps screen. Reopen it and choose **Continue**, then **Resume Battle**. Your checkpoint should return. Active play also checkpoints approximately every two seconds.
-8. With a saved battle available, start a new battle. Choose **Keep Current Battle** first; then repeat and choose **Replace and Start**. Confirm the first action preserves your match and the second replaces it.
-9. Finish a battle and check that career progress updates once. A completed battle should no longer appear under Continue.
-
-Please report your phone model, Android version, the step that failed, and a screenshot or short recording if possible. Note any small text, difficult targets, stuttering, excessive heat, or battery drain during a 10–15 minute session.
-
-Editor checks cover pause/input gating, settings, checkpoint serialization and disk recovery, AI scheduling continuity, corrupt-save recovery, and simulated background callbacks. Physical touch, Android app lifecycle behavior, device performance, and battery use still need this phone test.
+Build and editor checks are documented separately. Physical Android touch, lifecycle, font appearance, performance, and battery behavior require this phone test.

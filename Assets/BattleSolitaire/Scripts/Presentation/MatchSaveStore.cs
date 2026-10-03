@@ -13,7 +13,7 @@ namespace BattleSolitaire.Presentation
     [Serializable] public sealed class SavedParticipant
     {
         public int seed, health, energy, shield, combo;
-        public float comboSeconds, fog;
+        public float comboSeconds, fog, fogProtection;
         public float[] locks;
         public SavedBlocker[] blockers;
         // Stock, waste, four foundations, then seven tableau columns.
@@ -23,7 +23,7 @@ namespace BattleSolitaire.Presentation
             return new SavedParticipant {
                 seed=actor.Game.Seed, health=actor.Health, energy=actor.Energy, shield=actor.Shield,
                 combo=actor.Combo.Count, comboSeconds=actor.Combo.SecondsSinceLastMove,
-                fog=actor.Disruptions.FogTimeRemaining,
+                fog=actor.Disruptions.FogTimeRemaining, fogProtection=actor.Disruptions.FogProtectionRemaining,
                 locks=Enumerable.Range(0,7).Select(actor.Disruptions.GetLockTimeRemaining).ToArray(),
                 blockers=actor.Disruptions.Blockers.Select(b=>new SavedBlocker { column=b.Column,moves=b.MovesRemaining,seconds=b.TimeRemaining }).ToArray(),
                 piles=Piles(actor.Game).Select(p=>new SavedPile { cards=p.Select(c=>(int)c.Suit*13+(int)c.Rank-1+(c.IsFaceUp?52:0)).ToArray() }).ToArray()
@@ -53,7 +53,7 @@ namespace BattleSolitaire.Presentation
             }
             if(seen.Count!=52 || health<1 || health>100 || energy<0 || energy>100 || shield<0 || shield>40 || combo<0 || combo>100000)
                 throw new InvalidDataException("Invalid saved battle values.");
-            if(!Finite(comboSeconds,100000) || !Finite(fog,BattleTuning.FogDurationSeconds) || locks.Any(t=>!Finite(t,BattleTuning.LockDurationSeconds)))
+            if(!Finite(comboSeconds,100000) || !Finite(fog,4f) || !Finite(fogProtection,BattleTuning.FogCooldownSeconds) || locks.Any(t=>!Finite(t,BattleTuning.LockDurationSeconds)))
                 throw new InvalidDataException("Invalid saved timer.");
             var columns=new HashSet<int>();
             foreach(var b in blockers)
@@ -72,7 +72,7 @@ namespace BattleSolitaire.Presentation
             }
             actor.RestoreResources(health,energy,shield);
             actor.Combo.Restore(combo,comboSeconds);
-            actor.Disruptions.AddFog(fog);
+            actor.Disruptions.RestoreFog(fog,fogProtection);
             for(int i=0;i<7;i++) actor.Disruptions.AddLock(i,locks[i]);
             foreach(var b in blockers) actor.Disruptions.AddBlocker(b.column,b.moves,b.seconds);
         }
@@ -83,11 +83,19 @@ namespace BattleSolitaire.Presentation
         public int playerBattler, opponentBattler, difficulty, maxCombo;
         public SavedParticipant player, opponent;
         public SavedAI ai;
+        public int[] foundationSlots;
         public void Validate()
         {
             if(version!=1 || playerBattler<0 || playerBattler>2 || opponentBattler<0 || opponentBattler>2 || difficulty<0 || difficulty>2 || maxCombo<0 || maxCombo>100000 || player==null || opponent==null || ai==null)
                 throw new InvalidDataException("Unsupported or incomplete saved match.");
             player.Validate(); opponent.Validate(); ai.Validate();
+            if(foundationSlots!=null)
+            {
+                if(foundationSlots.Length!=4) throw new InvalidDataException("Invalid foundation layout.");
+                var assigned=new HashSet<int>();
+                foreach(int suit in foundationSlots)
+                    if(suit < -1 || suit > 3 || (suit>=0 && !assigned.Add(suit))) throw new InvalidDataException("Invalid foundation layout.");
+            }
         }
     }
 

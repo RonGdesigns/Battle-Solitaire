@@ -118,6 +118,9 @@ namespace BattleSolitaire.Battle
                 return false;
             }
 
+            if (attackType == BattleAttackType.Fog && defender.Disruptions.FogProtectionRemaining > 0f)
+                return false;
+
             if (!attacker.SpendEnergy(cost))
                 return false;
 

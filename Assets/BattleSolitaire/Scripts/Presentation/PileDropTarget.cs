@@ -38,6 +38,8 @@ namespace BattleSolitaire.Presentation
             if (dragged == null)
                 return;
 
+            dragged.MarkDropAttempted();
+
             bool moved;
 
             if (_kind == DropTargetKind.Tableau)
@@ -48,9 +50,7 @@ namespace BattleSolitaire.Presentation
             }
             else
             {
-                moved = _board.TryMoveCardToFoundation(
-                    dragged,
-                    _suit);
+                moved = _board.TryMoveCardToFoundationSlot(dragged,_column);
             }
 
             // Only suppress CardView's snap-back when the rules engine
@@ -67,7 +67,7 @@ namespace BattleSolitaire.Presentation
             if (_kind == DropTargetKind.Tableau)
                 _board.EmptyTableauTapped(_column);
             else
-                _board.FoundationSlotTapped(_suit);
+                _board.FoundationSlotTapped(_column);
         }
     }
 }
