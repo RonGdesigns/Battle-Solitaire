@@ -48,7 +48,9 @@ namespace BattleSolitaire.Core
             for (int i = deck.Count - 1; i > 0; i--)
             {
                 int j = random.Next(i + 1);
-                (deck[i], deck[j]) = (deck[j], deck[i]);
+                CardState temp = deck[i];
+                deck[i] = deck[j];
+                deck[j] = temp;
             }
         }
 
@@ -124,7 +126,7 @@ namespace BattleSolitaire.Core
             Waste.RemoveAt(Waste.Count - 1);
             destination.Add(card);
 
-            return MoveResult.Succeeded();
+            return MoveResult.Succeeded(MoveKind.WasteToTableau);
         }
 
         public MoveResult MoveWasteToFoundation()
@@ -141,7 +143,9 @@ namespace BattleSolitaire.Core
             Waste.RemoveAt(Waste.Count - 1);
             foundation.Add(card);
 
-            return MoveResult.Succeeded(foundationMove: true);
+            return MoveResult.Succeeded(
+                MoveKind.WasteToFoundation,
+                foundationMove: true);
         }
 
         public MoveResult MoveTableauToFoundation(int sourceColumn)
@@ -167,6 +171,7 @@ namespace BattleSolitaire.Core
             bool cleared = source.Count == 0;
 
             return MoveResult.Succeeded(
+                MoveKind.TableauToFoundation,
                 revealedHiddenCard: revealed,
                 clearedColumn: cleared,
                 foundationMove: true);
@@ -195,7 +200,7 @@ namespace BattleSolitaire.Core
             foundation.RemoveAt(foundation.Count - 1);
             destination.Add(card);
 
-            return MoveResult.Succeeded();
+            return MoveResult.Succeeded(MoveKind.FoundationToTableau);
         }
 
         public MoveResult MoveTableauToTableau(
@@ -237,6 +242,7 @@ namespace BattleSolitaire.Core
             bool cleared = source.Count == 0;
 
             return MoveResult.Succeeded(
+                MoveKind.TableauToTableau,
                 revealedHiddenCard: revealed,
                 clearedColumn: cleared);
         }
