@@ -233,6 +233,7 @@ namespace BattleSolitaire.Presentation
                 opponentPortraitRect.gameObject
                     .AddComponent<RawImage>();
 
+            _opponentPortrait.gameObject.AddComponent<AspectFillRawImage>();
             _opponentPortrait.raycastTarget = false;
             _opponentPortrait.color = Color.white;
 
@@ -337,6 +338,7 @@ namespace BattleSolitaire.Presentation
                 playerPortraitRect.gameObject
                     .AddComponent<RawImage>();
 
+            _playerPortrait.gameObject.AddComponent<AspectFillRawImage>();
             _playerPortrait.raycastTarget = false;
             _playerPortrait.color = Color.white;
 
@@ -424,8 +426,8 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _comboText.rectTransform,
-                new Vector2(0.69f, 0.66f),
-                new Vector2(0.96f, 0.94f),
+                new Vector2(0.61f, 0.66f),
+                new Vector2(0.80f, 0.94f),
                 Vector2.zero,
                 Vector2.zero);
 

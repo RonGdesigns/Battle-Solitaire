@@ -1,0 +1,11 @@
+Captured vesper-1080x1920 1080x1920
+Captured kael-1080x1920 1080x1920
+Captured aldric-1080x1920 1080x1920
+Captured phone-390x844 390x844
+Captured tablet-1200x1600 1200x1600
+Captured phone-safe-area 1080x2340
+Captured missing-portrait 1080x1920
+Captured battle-hud 1080x1920
+Captured career-after-win 1080x1920
+PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, result return, career refresh, portrait settings.
+Android build utility compiled with the editor assembly. No APK/device test in this review.

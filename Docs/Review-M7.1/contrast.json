@@ -1,0 +1,34 @@
+{
+  "gold/background": 9.99,
+  "light/panel": 15.25,
+  "muted/panel": 7.68,
+  "cyan/panel": 7.59,
+  "cyan/difficulty": 5.53,
+  "light/panelAlt": 13.1,
+  "border/panelAlt": 3.48,
+  "cyan/focused_difficulty": 4.72,
+  "source_sizes": {
+    "AppCrest.jpg": [
+      72,
+      72
+    ],
+    "CardBack.jpg": [
+      72,
+      101
+    ],
+    "Battlers\\Aldric.jpg": [
+      96,
+      117
+    ],
+    "Battlers\\Kael.jpg": [
+      96,
+      117
+    ],
+    "Battlers\\Vesper.jpg": [
+      96,
+      117
+    ]
+  },
+  "cta_text_vs_rendered_gradient_top": 4.68,
+  "cta_text_vs_rendered_gradient_bottom": 8.8
+}

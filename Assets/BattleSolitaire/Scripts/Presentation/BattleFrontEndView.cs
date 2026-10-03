@@ -1,5 +1,6 @@
 using BattleSolitaire.Battle;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace BattleSolitaire.Presentation
@@ -9,45 +10,30 @@ namespace BattleSolitaire.Presentation
         private BattleGameController _controller;
         private readonly Button[] _battlerButtons = new Button[BattlerCatalog.Count];
         private readonly Text[] _battlerNames = new Text[BattlerCatalog.Count];
-        private readonly Text[] _battlerGlyphs = new Text[BattlerCatalog.Count];
-
-        private Text _activeName;
-        private Text _activeTitle;
-        private Text _activeQuote;
-        private Text _activeTraits;
-        private Text _statsText;
-        private Text _recordText;
-        private Image _activeAccent;
-        private RawImage _activePortrait;
-
-        private readonly RawImage[] _battlerPortraits =
-            new RawImage[BattlerCatalog.Count];
-
-        private readonly Button[] _difficultyButtons =
-            new Button[3];
-
-        private Text _difficultyLabel;
-
+        private readonly GameObject[] _activeMarkers = new GameObject[BattlerCatalog.Count];
+        private readonly Button[] _difficultyButtons = new Button[3];
+        private readonly GameObject[] _difficultyMarkers = new GameObject[3];
+        private readonly Text[] _statValues = new Text[4];
+        private Text _activeName, _activeTitle, _activeQuote, _passiveName, _passiveDescription, _record;
+        private AspectFillRawImage _activePortrait;
+        private Outline _heroBorder;
+        private Button _battleButton;
+        private static readonly Color32 Border = new Color32(104, 126, 148, 255);
         public bool IsOpen => gameObject.activeSelf;
 
-        public static BattleFrontEndView Create(
-            Transform parent,
-            BattleGameController controller)
+        public static BattleFrontEndView Create(Transform parent, BattleGameController controller)
         {
-            RectTransform root = PrototypeUI.CreateRect(
-                "BattleFrontEnd",
-                parent,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero);
-
-            Image background = root.gameObject.AddComponent<Image>();
-            background.color = PrototypeUI.Background;
-
+            RectTransform root = PrototypeUI.CreateRect("BattleFrontEnd", parent,
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            root.gameObject.AddComponent<Image>().color = PrototypeUI.Background;
             var view = root.gameObject.AddComponent<BattleFrontEndView>();
             view._controller = controller;
-            view.Build();
+            view.BuildHeader();
+            view.BuildHero();
+            view.BuildBattlerPicker();
+            view.BuildLoadout();
+            view.BuildCareerAndBattle();
+            view.ConfigureNavigation();
             view.Refresh();
             root.gameObject.SetActive(false);
             return view;
@@ -58,564 +44,311 @@ namespace BattleSolitaire.Presentation
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
             Refresh();
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(_battleButton.gameObject);
         }
 
-        public void Hide()
-        {
-            gameObject.SetActive(false);
-        }
+        public void Hide() => gameObject.SetActive(false);
 
         public void Refresh()
         {
             BattlerDefinition active = _controller.PlayerBattler;
-            if (active == null)
-                return;
-
+            if (active == null) return;
             _activeName.text = active.Name.ToUpperInvariant();
             _activeTitle.text = active.Title;
             _activeQuote.text = "“" + active.Quote + "”";
-            _activeTraits.text = active.TraitLine;
-            _activeAccent.color = active.Accent;
+            string[] trait = active.TraitLine.Split(new[] { '•' }, 2);
+            _passiveName.text = trait[0].Trim();
+            _passiveDescription.text = trait.Length > 1 ? trait[1].Trim() : "";
+            _heroBorder.effectColor = Color.Lerp(active.Accent, PrototypeUI.Gold, 0.35f);
+            _activePortrait.SetTexture(GameArt.GetBattlerPortrait(active.Id));
 
-            if (_activePortrait != null)
-            {
-                _activePortrait.texture =
-                    GameArt.GetBattlerPortrait(active.Id);
-
-                _activePortrait.enabled =
-                    _activePortrait.texture != null;
-            }
-
-            for (int i = 0; i < BattlerCatalog.Count; i++)
+            for (int i = 0; i < _battlerButtons.Length; i++)
             {
                 BattlerDefinition battler = BattlerCatalog.GetByIndex(i);
                 bool selected = battler.Id == active.Id;
-                Image image = _battlerButtons[i].GetComponent<Image>();
-
-                image.color = selected
-                    ? Color.Lerp(PrototypeUI.PanelAlt, battler.Accent, 0.28f)
-                    : PrototypeUI.PanelAlt;
-
-                _battlerNames[i].color = selected
-                    ? PrototypeUI.Gold
-                    : PrototypeUI.TextLight;
-
-                _battlerGlyphs[i].color = selected
-                    ? battler.Accent
-                    : PrototypeUI.TextMuted;
-
-                if (_battlerPortraits[i] != null)
-                {
-                    _battlerPortraits[i].texture =
-                        GameArt.GetBattlerPortrait(battler.Id);
-
-                    _battlerPortraits[i].enabled =
-                        _battlerPortraits[i].texture != null;
-                }
+                SetButtonStyle(_battlerButtons[i], selected
+                    ? Color.Lerp(PrototypeUI.PanelAlt, battler.Accent, 0.24f) : PrototypeUI.PanelAlt,
+                    selected ? battler.Accent : Border);
+                _battlerNames[i].color = selected ? PrototypeUI.Gold : PrototypeUI.TextLight;
+                _activeMarkers[i].SetActive(selected);
             }
-
             BattleProfile profile = _controller.Profile;
-
-            BattleDifficulty difficulty =
-                profile.Difficulty;
-
-            if (_difficultyLabel != null)
+            for (int i = 0; i < _difficultyButtons.Length; i++)
             {
-                _difficultyLabel.text =
-                    "RIVAL AI  •  " +
-                    BattleDifficultyTuning.GetLabel(
-                        difficulty);
+                bool selected = i == (int)profile.Difficulty;
+                SetButtonStyle(_difficultyButtons[i], selected
+                    ? new Color32(16, 56, 77, 255) : PrototypeUI.PanelAlt,
+                    selected ? PrototypeUI.Accent : Border);
+                _difficultyButtons[i].GetComponentInChildren<Text>().color =
+                    selected ? PrototypeUI.Accent : PrototypeUI.TextLight;
+                _difficultyMarkers[i].SetActive(selected);
             }
-
-            for (int i = 0;
-                 i < _difficultyButtons.Length;
-                 i++)
-            {
-                BattleDifficulty option =
-                    (BattleDifficulty)i;
-
-                Image image =
-                    _difficultyButtons[i]
-                        .GetComponent<Image>();
-
-                image.color =
-                    option == difficulty
-                        ? new Color32(
-                            31, 99, 137, 255)
-                        : PrototypeUI.PanelAlt;
-            }
-
-            _statsText.text =
-                "WINS  " + profile.Wins +
-                "\nLONGEST COMBO  x" + profile.LongestCombo +
-                "\nPERFECT CLEARS  " + profile.PerfectClears +
-                "\nMASTERY LV  " +
-                profile.GetMasteryLevel(active.Id);
-
-            int losses = Mathf.Max(0, profile.Matches - profile.Wins);
-
-            string rank =
-                profile.GetRankName() +
-                "  " +
-                profile.RankPoints +
-                " RP";
-
-            _recordText.text =
-                profile.Matches == 0
-                    ? rank + "  •  NEW CHALLENGER"
-                    : rank +
-                      "  •  " +
-                      profile.Wins +
-                      "W  " +
-                      losses +
-                      "L";
+            _statValues[0].text = profile.Wins.ToString();
+            _statValues[1].text = "x" + profile.LongestCombo;
+            _statValues[2].text = profile.PerfectClears.ToString();
+            _statValues[3].text = profile.GetMasteryLevel(active.Id).ToString();
+            _record.text = profile.GetRankName() + " • " + profile.RankPoints + " RP";
         }
 
-        private void Build()
+        private void BuildHeader()
         {
-            Text logo = PrototypeUI.CreateText(
-                "Logo",
-                transform,
-                "BATTLE\nSOLITAIRE",
-                54,
-                TextAnchor.UpperLeft,
-                PrototypeUI.Gold,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                logo.rectTransform,
-                new Vector2(0.055f, 0.82f),
-                new Vector2(0.55f, 0.97f),
-                Vector2.zero,
-                Vector2.zero);
-
-            RectTransform crestRect =
-                PrototypeUI.CreateRect(
-                    "BattleCrest",
-                    transform,
-                    new Vector2(0.42f, 0.905f),
-                    new Vector2(0.51f, 0.975f),
-                    Vector2.zero,
-                    Vector2.zero);
-
-            RawImage crest =
-                crestRect.gameObject
-                    .AddComponent<RawImage>();
-
-            crest.texture =
-                GameArt.GetCrest();
-
-            crest.enabled =
-                crest.texture != null;
-
-            crest.raycastTarget = false;
-            crest.color = Color.white;
-
-            Text motto = PrototypeUI.CreateText(
-                "Motto",
-                transform,
-                "SKILL PLAYS.  HIGHER STAKES.",
-                20,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.TextMuted,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                motto.rectTransform,
-                new Vector2(0.055f, 0.785f),
-                new Vector2(0.52f, 0.825f),
-                Vector2.zero,
-                Vector2.zero);
-
-            _difficultyLabel =
-                PrototypeUI.CreateText(
-                    "DifficultyLabel",
-                    transform,
-                    "RIVAL AI  •  STANDARD",
-                    17,
-                    TextAnchor.MiddleRight,
-                    PrototypeUI.TextMuted,
-                    FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                _difficultyLabel.rectTransform,
-                new Vector2(0.54f, 0.875f),
-                new Vector2(0.945f, 0.92f),
-                Vector2.zero,
-                Vector2.zero);
-
-            string[] difficultyNames =
-                { "CASUAL", "STANDARD", "EXPERT" };
-
-            for (int i = 0; i < 3; i++)
+            Label("BattleLogo", transform, "BATTLE", 39, PrototypeUI.Gold,
+                0.055f, 0.943f, 0.37f, 0.980f, true);
+            Label("SolitaireLogo", transform, "SOLITAIRE", 39, PrototypeUI.TextLight,
+                0.055f, 0.919f, 0.39f, 0.953f, true);
+            Label("Motto", transform, "SKILL PLAYS. HIGHER STAKES.", 20, PrototypeUI.TextMuted,
+                0.055f, 0.894f, 0.53f, 0.923f, true);
+            BuildCrest();
+            Label("DifficultyLabel", transform, "RIVAL AI", 22, PrototypeUI.Gold,
+                0.545f, 0.951f, 0.945f, 0.98f, true);
+            string[] names = { "CASUAL", "STANDARD", "EXPERT" };
+            for (int i = 0; i < names.Length; i++)
             {
-                float left =
-                    0.54f + (i * 0.137f);
-
-                float right =
-                    left + 0.125f;
-
-                Button difficulty =
-                    PrototypeUI.CreateButton(
-                        "Difficulty_" + i,
-                        transform,
-                        difficultyNames[i],
-                        PrototypeUI.PanelAlt,
-                        PrototypeUI.TextLight);
-
-                PrototypeUI.SetAnchoredBox(
-                    difficulty.GetComponent<RectTransform>(),
-                    new Vector2(left, 0.825f),
-                    new Vector2(right, 0.87f),
-                    Vector2.zero,
-                    Vector2.zero);
-
-                Text label =
-                    difficulty.GetComponentInChildren<Text>();
-
-                label.fontSize = 15;
-
-                int captured = i;
-
-                difficulty.onClick.AddListener(
-                    () => _controller.SelectDifficulty(
-                        (BattleDifficulty)captured));
-
-                _difficultyButtons[i] =
-                    difficulty;
+                int option = i;
+                float[] left = { 0.53f, 0.662f, 0.822f };
+                float[] right = { 0.652f, 0.812f, 0.945f };
+                float x = left[i];
+                Button button = Button("Difficulty_" + names[i], transform, names[i],
+                    x, 0.905f, right[i], 0.950f, 20);
+                button.onClick.AddListener(() => _controller.SelectDifficulty((BattleDifficulty)option));
+                _difficultyButtons[i] = button;
+                Image marker = Panel("SelectedDifficulty", button.transform, 0.15f, 0.09f, 0.85f, 0.13f);
+                marker.color = PrototypeUI.Accent;
+                _difficultyMarkers[i] = marker.gameObject;
             }
+        }
 
-            Image hero = PrototypeUI.CreatePanel(
-                "ActiveBattler",
-                transform,
-                new Vector2(0.055f, 0.52f),
-                new Vector2(0.945f, 0.775f),
-                Vector2.zero,
-                Vector2.zero,
-                PrototypeUI.Panel);
+        private void BuildCrest()
+        {
+            Texture texture = GameArt.GetCrest();
+            if (texture == null) return;
+            RectTransform rect = PrototypeUI.CreateRect("BattleCrest", transform,
+                new Vector2(0.365f, 0.946f), new Vector2(0.425f, 0.98f), Vector2.zero, Vector2.zero);
+            RawImage crest = rect.gameObject.AddComponent<RawImage>();
+            crest.texture = texture;
+            crest.raycastTarget = false;
+            // The supplied square asset contains clipped logo text below the emblem.
+            // Frame the emblem region without resampling or changing the source asset.
+            crest.uvRect = new Rect(0.14f, 0.56f, 0.50f, 0.44f);
+            AspectRatioFitter ratio = rect.gameObject.AddComponent<AspectRatioFitter>();
+            ratio.aspectMode = AspectRatioFitter.AspectMode.WidthControlsHeight;
+            ratio.aspectRatio = texture.width * 0.50f / (texture.height * 0.44f);
+        }
 
-            PrototypeUI.AddOutline(hero, PrototypeUI.GoldDim, 2f);
+        private void BuildHero()
+        {
+            Image hero = Panel("ActiveBattler", transform, 0.055f, 0.60f, 0.945f, 0.88f);
+            _heroBorder = PrototypeUI.AddOutline(hero, PrototypeUI.GoldDim, 2f);
+            _activePortrait = Portrait("ActivePortrait", hero.transform, null,
+                0.61f, 0.065f, 0.965f, 0.94f, 0.8f);
+            Label("ActiveLabel", hero.transform, "ACTIVE BATTLER", 23, PrototypeUI.Gold,
+                0.045f, 0.84f, 0.58f, 0.95f, true);
+            _activeName = Label("ActiveName", hero.transform, "", 62, PrototypeUI.TextLight,
+                0.045f, 0.64f, 0.59f, 0.84f, true);
+            _activeTitle = Label("ActiveTitle", hero.transform, "", 28, PrototypeUI.Accent,
+                0.045f, 0.55f, 0.59f, 0.66f);
+            _activeQuote = Label("ActiveQuote", hero.transform, "", 29, PrototypeUI.TextLight,
+                0.045f, 0.30f, 0.56f, 0.53f);
+            _passiveName = Label("PassiveName", hero.transform, "", 23, PrototypeUI.Gold,
+                0.045f, 0.20f, 0.58f, 0.29f, true);
+            _passiveDescription = Label("PassiveDescription", hero.transform, "", 24, PrototypeUI.TextMuted,
+                0.045f, 0.045f, 0.57f, 0.20f);
+        }
 
-            _activeAccent = PrototypeUI.CreatePanel(
-                "ActiveAccent",
-                hero.transform,
-                new Vector2(0f, 0f),
-                new Vector2(0.022f, 1f),
-                Vector2.zero,
-                Vector2.zero,
-                PrototypeUI.Danger);
-
-            RectTransform activePortraitRect =
-                PrototypeUI.CreateRect(
-                    "ActivePortrait",
-                    hero.transform,
-                    new Vector2(0.66f, 0.08f),
-                    new Vector2(0.96f, 0.92f),
-                    Vector2.zero,
-                    Vector2.zero);
-
-            _activePortrait =
-                activePortraitRect.gameObject
-                    .AddComponent<RawImage>();
-
-            _activePortrait.color = Color.white;
-            _activePortrait.raycastTarget = false;
-
-            PrototypeUI.AddOutline(
-                _activePortrait,
-                PrototypeUI.GoldDim,
-                1.5f);
-
-            Text activeLabel = PrototypeUI.CreateText(
-                "ActiveLabel",
-                hero.transform,
-                "ACTIVE BATTLER",
-                19,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.Gold,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                activeLabel.rectTransform,
-                new Vector2(0.07f, 0.78f),
-                new Vector2(0.45f, 0.94f),
-                Vector2.zero,
-                Vector2.zero);
-
-            _activeName = PrototypeUI.CreateText(
-                "ActiveName",
-                hero.transform,
-                "",
-                44,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.TextLight,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                _activeName.rectTransform,
-                new Vector2(0.07f, 0.52f),
-                new Vector2(0.64f, 0.80f),
-                Vector2.zero,
-                Vector2.zero);
-
-            _activeTitle = PrototypeUI.CreateText(
-                "ActiveTitle",
-                hero.transform,
-                "",
-                25,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.Accent);
-
-            PrototypeUI.SetAnchoredBox(
-                _activeTitle.rectTransform,
-                new Vector2(0.07f, 0.39f),
-                new Vector2(0.70f, 0.57f),
-                Vector2.zero,
-                Vector2.zero);
-
-            _activeQuote = PrototypeUI.CreateText(
-                "ActiveQuote",
-                hero.transform,
-                "",
-                23,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.TextMuted);
-
-            PrototypeUI.SetAnchoredBox(
-                _activeQuote.rectTransform,
-                new Vector2(0.07f, 0.19f),
-                new Vector2(0.86f, 0.40f),
-                Vector2.zero,
-                Vector2.zero);
-
-            _activeTraits = PrototypeUI.CreateText(
-                "ActiveTraits",
-                hero.transform,
-                "",
-                18,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.Gold,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                _activeTraits.rectTransform,
-                new Vector2(0.07f, 0.04f),
-                new Vector2(0.90f, 0.20f),
-                Vector2.zero,
-                Vector2.zero);
-
-            Text choose = PrototypeUI.CreateText(
-                "ChooseLabel",
-                transform,
-                "CHOOSE YOUR BATTLER",
-                25,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.Gold,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                choose.rectTransform,
-                new Vector2(0.055f, 0.475f),
-                new Vector2(0.80f, 0.515f),
-                Vector2.zero,
-                Vector2.zero);
-
+        private void BuildBattlerPicker()
+        {
+            Label("ChooseLabel", transform, "CHOOSE YOUR BATTLER", 25, PrototypeUI.Gold,
+                0.055f, 0.568f, 0.945f, 0.597f, true);
             for (int i = 0; i < BattlerCatalog.Count; i++)
             {
                 BattlerDefinition battler = BattlerCatalog.GetByIndex(i);
-                float left = 0.055f + i * 0.302f;
-                float right = left + 0.282f;
-
-                Button button = PrototypeUI.CreateButton(
-                    "Battler_" + battler.Name,
-                    transform,
-                    "",
-                    PrototypeUI.PanelAlt,
-                    PrototypeUI.TextLight);
-
-                PrototypeUI.SetAnchoredBox(
-                    button.GetComponent<RectTransform>(),
-                    new Vector2(left, 0.345f),
-                    new Vector2(right, 0.47f),
-                    Vector2.zero,
-                    Vector2.zero);
-
-                int captured = i;
-                button.onClick.AddListener(
-                    () => _controller.SelectBattler(
-                        BattlerCatalog.GetByIndex(captured).Id));
-
-                RectTransform portraitRect =
-                    PrototypeUI.CreateRect(
-                        "Portrait",
-                        button.transform,
-                        new Vector2(0.08f, 0.31f),
-                        new Vector2(0.92f, 0.94f),
-                        Vector2.zero,
-                        Vector2.zero);
-
-                RawImage portrait =
-                    portraitRect.gameObject
-                        .AddComponent<RawImage>();
-
-                portrait.raycastTarget = false;
-                portrait.color = Color.white;
-                _battlerPortraits[i] = portrait;
-
-                Text glyph = PrototypeUI.CreateText(
-                    "Glyph",
-                    button.transform,
-                    battler.SuitGlyph,
-                    30,
-                    TextAnchor.UpperLeft,
-                    battler.Accent,
-                    FontStyle.Bold);
-
-                PrototypeUI.SetAnchoredBox(
-                    glyph.rectTransform,
-                    new Vector2(0.06f, 0.68f),
-                    new Vector2(0.30f, 0.94f),
-                    Vector2.zero,
-                    Vector2.zero);
-
-                Text name = PrototypeUI.CreateText(
-                    "Name",
-                    button.transform,
-                    battler.Name.ToUpperInvariant(),
-                    22,
-                    TextAnchor.LowerCenter,
-                    PrototypeUI.TextLight,
-                    FontStyle.Bold);
-
-                PrototypeUI.SetAnchoredBox(
-                    name.rectTransform,
-                    new Vector2(0.04f, 0.08f),
-                    new Vector2(0.96f, 0.40f),
-                    Vector2.zero,
-                    Vector2.zero);
-
+                float x = 0.055f + i * 0.305f;
+                Button button = Button("Battler_" + battler.Name, transform, "",
+                    x, 0.39f, x + 0.28f, 0.558f, 28);
+                button.onClick.AddListener(() => _controller.SelectBattler(battler.Id));
+                Portrait("Portrait", button.transform, GameArt.GetBattlerPortrait(battler.Id),
+                    0.055f, 0.25f, 0.945f, 0.97f, 0.8f);
+                Text name = Label("Name", button.transform, battler.Name.ToUpperInvariant(), 28,
+                    PrototypeUI.TextLight, 0.03f, 0.015f, 0.97f, 0.245f, true, TextAnchor.MiddleCenter);
+                Image marker = Panel("ActiveMarker", button.transform, 0.26f, 0.27f, 0.74f, 0.38f);
+                marker.color = PrototypeUI.DeepNavy;
+                Label("Active", marker.transform, "ACTIVE", 20, PrototypeUI.Gold,
+                    0, 0, 1, 1, true, TextAnchor.MiddleCenter);
                 _battlerButtons[i] = button;
                 _battlerNames[i] = name;
-                _battlerGlyphs[i] = glyph;
+                _activeMarkers[i] = marker.gameObject;
             }
+        }
 
-            Image loadout = PrototypeUI.CreatePanel(
-                "Loadout",
-                transform,
-                new Vector2(0.055f, 0.205f),
-                new Vector2(0.945f, 0.33f),
-                Vector2.zero,
-                Vector2.zero,
-                PrototypeUI.Panel);
+        private void BuildLoadout()
+        {
+            Label("LoadoutLabel", transform, "BATTLE LOADOUT", 25, PrototypeUI.Gold,
+                0.055f, 0.351f, 0.945f, 0.382f, true);
+            string[] names = { "LOCK", "FOG", "BLOCK" };
+            string[] costs = { "25 ENERGY", "25 ENERGY", "50 ENERGY" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                float x = 0.055f + i * 0.305f;
+                Image tile = Panel("Loadout_" + names[i], transform, x, 0.252f, x + 0.28f, 0.345f);
+                PrototypeUI.AddOutline(tile, Border, 1f);
+                Label("Ability", tile.transform, names[i], 28, PrototypeUI.TextLight,
+                    0.07f, 0.57f, 0.93f, 0.93f, true, TextAnchor.MiddleCenter);
+                Label("Cost", tile.transform, costs[i], 22, PrototypeUI.Accent,
+                    0.07f, 0.32f, 0.93f, 0.58f, true, TextAnchor.MiddleCenter);
+                BuildAbilityIcon(tile.transform, i);
+            }
+        }
 
-            PrototypeUI.AddOutline(loadout, new Color32(66, 87, 112, 210), 1f);
+        // Simple geometric ability symbols avoid missing platform font glyphs.
+        private static void BuildAbilityIcon(Transform parent, int ability)
+        {
+            RectTransform icon = PrototypeUI.CreateRect("Icon", parent,
+                new Vector2(0.5f, 0.17f), new Vector2(0.5f, 0.17f),
+                new Vector2(-23, -17), new Vector2(23, 17));
+            if (ability == 0)
+            {
+                Image body = Panel("LockBody", icon, 0.15f, 0, 0.85f, 0.62f);
+                body.color = PrototypeUI.Accent;
+                Image shackle = Panel("Shackle", icon, 0.3f, 0.5f, 0.7f, 1f);
+                shackle.color = PrototypeUI.Accent;
+                Image opening = Panel("Opening", shackle.transform, 0.2f, 0, 0.8f, 0.75f);
+                opening.color = PrototypeUI.Panel;
+            }
+            else if (ability == 1)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    Image line = Panel("FogLine", icon, i == 1 ? 0.15f : 0, i * 0.36f,
+                        i == 1 ? 0.85f : 1, i * 0.36f + 0.12f);
+                    line.color = PrototypeUI.Accent;
+                }
+            }
+            else
+            {
+                Image wall = Panel("Block", icon, 0.12f, 0, 0.88f, 1);
+                wall.color = PrototypeUI.Accent;
+                Image center = Panel("Inset", wall.transform, 0.13f, 0.14f, 0.87f, 0.86f);
+                center.color = PrototypeUI.Panel;
+            }
+        }
 
-            Text loadoutLabel = PrototypeUI.CreateText(
-                "LoadoutLabel",
-                loadout.transform,
-                "BATTLE LOADOUT",
-                21,
-                TextAnchor.UpperLeft,
-                PrototypeUI.Gold,
-                FontStyle.Bold);
+        private void BuildCareerAndBattle()
+        {
+            Image career = Panel("Career", transform, 0.055f, 0.07f, 0.49f, 0.23f);
+            Label("CareerLabel", career.transform, "CAREER", 24, PrototypeUI.Gold,
+                0.06f, 0.79f, 0.94f, 0.96f, true);
+            string[] names = { "WINS", "LONGEST COMBO", "PERFECT CLEARS", "MASTERY LV" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                float y = 0.62f - i * 0.14f;
+                Label("StatLabel", career.transform, names[i], 22, PrototypeUI.TextMuted,
+                    0.06f, y, 0.79f, y + 0.14f);
+                _statValues[i] = Label("StatValue", career.transform, "", 25, PrototypeUI.TextLight,
+                    0.8f, y, 0.94f, y + 0.14f, true, TextAnchor.MiddleRight);
+            }
+            _record = Label("Rank", career.transform, "", 22, PrototypeUI.Gold,
+                0.06f, 0.025f, 0.94f, 0.18f, true);
+            _battleButton = Button("BattleButton", transform, "BATTLE",
+                0.52f, 0.111f, 0.945f, 0.23f, 49);
+            SetButtonStyle(_battleButton, new Color32(177, 37, 58, 255), PrototypeUI.Gold);
+            _battleButton.gameObject.AddComponent<MenuGradient>();
+            Shadow glow = _battleButton.gameObject.AddComponent<Shadow>();
+            glow.effectColor = new Color(0.75f, 0.13f, 0.22f, 0.18f);
+            glow.effectDistance = new Vector2(0, -9);
+            _battleButton.onClick.AddListener(_controller.StartBattleFromMenu);
+            Label("BattleTagline", transform, "SOLVE. STRIKE. ASCEND.", 22, PrototypeUI.TextMuted,
+                0.52f, 0.073f, 0.945f, 0.107f, true, TextAnchor.MiddleCenter);
+        }
 
-            PrototypeUI.SetAnchoredBox(
-                loadoutLabel.rectTransform,
-                new Vector2(0.04f, 0.68f),
-                new Vector2(0.52f, 0.96f),
-                Vector2.zero,
-                Vector2.zero);
-
-            string[] abilityNames = { "LOCK 25", "FOG 25", "BLOCK 50" };
-            string[] abilityGlyphs = { "[ ]", "~~~", "<>" };
-
+        private void ConfigureNavigation()
+        {
+            // Keep navigation inside the visible menu, away from the covered battle HUD.
             for (int i = 0; i < 3; i++)
             {
-                float left = 0.04f + i * 0.322f;
-                float right = left + 0.29f;
-
-                Image ability = PrototypeUI.CreatePanel(
-                    "Loadout_" + i,
-                    loadout.transform,
-                    new Vector2(left, 0.10f),
-                    new Vector2(right, 0.64f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    new Color32(20, 49, 77, 255));
-
-                PrototypeUI.AddOutline(ability, new Color32(45, 149, 207, 220), 1f);
-
-                PrototypeUI.CreateText(
-                    "Ability",
-                    ability.transform,
-                    abilityGlyphs[i] + "  " + abilityNames[i],
-                    20,
-                    TextAnchor.MiddleCenter,
-                    PrototypeUI.TextLight,
-                    FontStyle.Bold);
+                Navigation difficulty = new Navigation { mode = Navigation.Mode.Explicit,
+                    selectOnLeft = _difficultyButtons[(i + 2) % 3],
+                    selectOnRight = _difficultyButtons[(i + 1) % 3], selectOnDown = _battlerButtons[i],
+                    selectOnUp = _battleButton };
+                _difficultyButtons[i].navigation = difficulty;
+                Navigation battler = new Navigation { mode = Navigation.Mode.Explicit,
+                    selectOnLeft = _battlerButtons[(i + 2) % 3],
+                    selectOnRight = _battlerButtons[(i + 1) % 3], selectOnUp = _difficultyButtons[i],
+                    selectOnDown = _battleButton };
+                _battlerButtons[i].navigation = battler;
             }
-
-            Image stats = PrototypeUI.CreatePanel(
-                "Stats",
-                transform,
-                new Vector2(0.055f, 0.065f),
-                new Vector2(0.49f, 0.19f),
-                Vector2.zero,
-                Vector2.zero,
-                PrototypeUI.Panel);
-
-            _statsText = PrototypeUI.CreateText(
-                "StatsText",
-                stats.transform,
-                "",
-                20,
-                TextAnchor.MiddleLeft,
-                PrototypeUI.TextLight,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                _statsText.rectTransform,
-                new Vector2(0.07f, 0.08f),
-                new Vector2(0.93f, 0.92f),
-                Vector2.zero,
-                Vector2.zero);
-
-            Button battleButton = PrototypeUI.CreateButton(
-                "BattleButton",
-                transform,
-                "BATTLE",
-                new Color32(119, 25, 35, 255),
-                PrototypeUI.TextLight);
-
-            PrototypeUI.SetAnchoredBox(
-                battleButton.GetComponent<RectTransform>(),
-                new Vector2(0.52f, 0.095f),
-                new Vector2(0.945f, 0.19f),
-                Vector2.zero,
-                Vector2.zero);
-
-            PrototypeUI.AddOutline(
-                battleButton.GetComponent<Image>(),
-                new Color32(238, 70, 78, 245),
-                2f);
-
-            battleButton.onClick.AddListener(_controller.StartBattleFromMenu);
-
-            _recordText = PrototypeUI.CreateText(
-                "Record",
-                transform,
-                "",
-                18,
-                TextAnchor.MiddleCenter,
-                PrototypeUI.TextMuted,
-                FontStyle.Bold);
-
-            PrototypeUI.SetAnchoredBox(
-                _recordText.rectTransform,
-                new Vector2(0.52f, 0.055f),
-                new Vector2(0.945f, 0.09f),
-                Vector2.zero,
-                Vector2.zero);
+            _battleButton.navigation = new Navigation { mode = Navigation.Mode.Explicit,
+                selectOnUp = _battlerButtons[1], selectOnDown = _difficultyButtons[1] };
         }
+
+        private static void SetButtonStyle(Button button, Color fill, Color border)
+        {
+            Image image = button.GetComponent<Image>();
+            image.color = fill;
+            PrototypeUI.AddOutline(image, border, 2f);
+            // ColorBlock is a multiplier. Use neutral tints instead of multiplying the fill by itself.
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.18f, 1.18f, 1.18f);
+            colors.selectedColor = new Color(1.2f, 1.2f, 1.2f);
+            colors.pressedColor = new Color(0.72f, 0.72f, 0.72f);
+            colors.disabledColor = new Color(0.45f, 0.45f, 0.45f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0f;
+            button.colors = colors;
+        }
+
+        private static Image Panel(string name, Transform parent, float x0, float y0, float x1, float y1)
+        {
+            Image image = PrototypeUI.CreatePanel(name, parent, new Vector2(x0, y0),
+                new Vector2(x1, y1), Vector2.zero, Vector2.zero, PrototypeUI.Panel);
+            image.raycastTarget = false;
+            return image;
+        }
+
+        private static Button Button(string name, Transform parent, string label,
+            float x0, float y0, float x1, float y1, int fontSize)
+        {
+            Button button = PrototypeUI.CreateButton(name, parent, label, PrototypeUI.PanelAlt, PrototypeUI.TextLight);
+            Box((RectTransform)button.transform, x0, y0, x1, y1);
+            button.GetComponentInChildren<Text>().fontSize = fontSize;
+            SetButtonStyle(button, PrototypeUI.PanelAlt, Border);
+            return button;
+        }
+
+        private static Text Label(string name, Transform parent, string value, int size, Color color,
+            float x0, float y0, float x1, float y1, bool bold = false, TextAnchor align = TextAnchor.MiddleLeft)
+        {
+            Text text = PrototypeUI.CreateText(name, parent, value, size, align, color,
+                bold ? FontStyle.Bold : FontStyle.Normal);
+            Box(text.rectTransform, x0, y0, x1, y1);
+            return text;
+        }
+
+        private static AspectFillRawImage Portrait(string name, Transform parent, Texture texture,
+            float x0, float y0, float x1, float y1, float aspect)
+        {
+            RectTransform frame = PrototypeUI.CreateRect(name + "Frame", parent,
+                new Vector2(x0, y0), new Vector2(x1, y1), Vector2.zero, Vector2.zero);
+            // The fallback remains behind real art and appears only if a resource fails to load.
+            Label("PortraitFallback", frame, "PORTRAIT\nUNAVAILABLE", 20, PrototypeUI.TextMuted,
+                0, 0, 1, 1, false, TextAnchor.MiddleCenter);
+            RectTransform rect = PrototypeUI.CreateRect(name, frame, Vector2.zero, Vector2.one,
+                Vector2.zero, Vector2.zero);
+            RawImage image = rect.gameObject.AddComponent<RawImage>();
+            image.raycastTarget = false;
+            AspectRatioFitter ratio = rect.gameObject.AddComponent<AspectRatioFitter>();
+            ratio.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            ratio.aspectRatio = aspect;
+            AspectFillRawImage fill = rect.gameObject.AddComponent<AspectFillRawImage>();
+            fill.SetTexture(texture);
+            frame.Find("PortraitFallback").gameObject.SetActive(texture == null);
+            // Hero art changes later in Refresh, so its fallback is kept behind the image.
+            if (name == "ActivePortrait") frame.Find("PortraitFallback").gameObject.SetActive(true);
+            return fill;
+        }
+
+        private static void Box(RectTransform rect, float x0, float y0, float x1, float y1)
+            => PrototypeUI.SetAnchoredBox(rect, new Vector2(x0, y0), new Vector2(x1, y1), Vector2.zero, Vector2.zero);
     }
 }
