@@ -91,13 +91,27 @@ namespace BattleSolitaire.Presentation
             _statsText.text =
                 "WINS  " + profile.Wins +
                 "\nLONGEST COMBO  x" + profile.LongestCombo +
-                "\nPERFECT CLEARS  " + profile.PerfectClears;
+                "\nPERFECT CLEARS  " + profile.PerfectClears +
+                "\nMASTERY LV  " +
+                profile.GetMasteryLevel(active.Id);
 
             int losses = Mathf.Max(0, profile.Matches - profile.Wins);
 
-            _recordText.text = profile.Matches == 0
-                ? "LOCAL RECORD  •  NEW CHALLENGER"
-                : "LOCAL RECORD  •  " + profile.Wins + "W  " + losses + "L";
+            string rank =
+                profile.GetRankName() +
+                "  " +
+                profile.RankPoints +
+                " RP";
+
+            _recordText.text =
+                profile.Matches == 0
+                    ? rank + "  •  NEW CHALLENGER"
+                    : rank +
+                      "  •  " +
+                      profile.Wins +
+                      "W  " +
+                      losses +
+                      "L";
         }
 
         private void Build()

@@ -92,3 +92,13 @@ See `Docs/MILESTONE_4.md` for details.
 - upgraded card faces with real suit glyphs and premium card backs
 - result screen can return to loadout
 - Android play-test version advanced to 0.5.0
+
+
+### Milestone 6 — Battler gameplay + progression
+- Vesper: foundation moves deal +1 damage
+- Kael: combo x3+ progress moves gain +1 energy
+- Aldric: +10 max shield and +1 foundation shield
+- AI uses the same battler passives
+- local rank points and Bronze-to-Diamond ranks
+- per-battler mastery XP and levels
+- Android play-test version advanced to 0.6.0

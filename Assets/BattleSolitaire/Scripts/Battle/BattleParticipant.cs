@@ -11,16 +11,31 @@ namespace BattleSolitaire.Battle
         public BattleDisruptionState Disruptions { get; }
             = new BattleDisruptionState();
 
+        public BattleModifiers Modifiers { get; }
+
         public int Health { get; private set; } = BattleTuning.MaxHealth;
         public int Energy { get; private set; }
         public int Shield { get; private set; }
+
+        public int MaxShield =>
+            BattleTuning.MaxShield +
+            Modifiers.MaxShieldBonus;
 
         public bool IsDefeated => Health <= 0;
         public float ClearPercentage => Game.GetClearPercentage();
 
         public BattleParticipant(string name, int seed)
+            : this(name, seed, BattleModifiers.None)
+        {
+        }
+
+        public BattleParticipant(
+            string name,
+            int seed,
+            BattleModifiers modifiers)
         {
             Name = name;
+            Modifiers = modifiers ?? BattleModifiers.None;
             Game = new SolitaireGame(seed);
         }
 
@@ -41,31 +56,58 @@ namespace BattleSolitaire.Battle
                 return BattleMoveOutcome.None;
 
             int comboBonus = Combo.RegisterProgressMove();
-            int energyGained = BattleTuning.BaseMoveEnergy + comboBonus;
+            int energyGained =
+                BattleTuning.BaseMoveEnergy +
+                comboBonus;
+
             int shieldGained = 0;
             int damageDealt = 0;
 
+            if (Combo.Count >= 3)
+            {
+                energyGained +=
+                    Modifiers.ComboEnergyBonusAtThree;
+            }
+
             if (move.RevealedHiddenCard)
-                energyGained += BattleTuning.RevealHiddenCardEnergy;
+            {
+                energyGained +=
+                    BattleTuning.RevealHiddenCardEnergy;
+            }
 
             if (move.FoundationMove)
             {
-                energyGained += BattleTuning.FoundationMoveEnergy;
-                shieldGained += BattleTuning.FoundationShield;
-                damageDealt += BattleTuning.FoundationDamage;
+                energyGained +=
+                    BattleTuning.FoundationMoveEnergy;
+
+                shieldGained +=
+                    BattleTuning.FoundationShield +
+                    Modifiers.FoundationShieldBonus;
+
+                damageDealt +=
+                    BattleTuning.FoundationDamage +
+                    Modifiers.FoundationDamageBonus;
             }
 
             if (move.ClearedColumn)
             {
-                energyGained += BattleTuning.ClearedColumnEnergy;
-                damageDealt += BattleTuning.ClearedColumnDamage;
+                energyGained +=
+                    BattleTuning.ClearedColumnEnergy;
+
+                damageDealt +=
+                    BattleTuning.ClearedColumnDamage;
             }
 
             int previousEnergy = Energy;
             int previousShield = Shield;
 
-            Energy = Math.Min(BattleTuning.MaxEnergy, Energy + energyGained);
-            Shield = Math.Min(BattleTuning.MaxShield, Shield + shieldGained);
+            Energy = Math.Min(
+                BattleTuning.MaxEnergy,
+                Energy + energyGained);
+
+            Shield = Math.Min(
+                MaxShield,
+                Shield + shieldGained);
 
             Disruptions.RegisterSuccessfulProgressMove();
 
@@ -95,7 +137,9 @@ namespace BattleSolitaire.Battle
 
             if (Shield > 0)
             {
-                int absorbed = Math.Min(Shield, remainingDamage);
+                int absorbed =
+                    Math.Min(Shield, remainingDamage);
+
                 Shield -= absorbed;
                 remainingDamage -= absorbed;
             }
@@ -104,7 +148,10 @@ namespace BattleSolitaire.Battle
                 return 0;
 
             int previousHealth = Health;
-            Health = Math.Max(0, Health - remainingDamage);
+
+            Health = Math.Max(
+                0,
+                Health - remainingDamage);
 
             return previousHealth - Health;
         }

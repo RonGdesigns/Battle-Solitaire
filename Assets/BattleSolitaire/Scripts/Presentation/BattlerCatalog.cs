@@ -48,23 +48,25 @@ namespace BattleSolitaire.Presentation
                 "The Crimson Deal",
                 "Every card moves the battle forward.",
                 "♦",
-                "+HP   +DAMAGE   +COMBO",
+                "CRIMSON EDGE • Foundation moves deal +1 damage",
                 new Color32(215, 62, 79, 255)),
+
             new BattlerDefinition(
                 BattlerId.Kael,
                 "Kael",
                 "The Resolute",
                 "Discipline wins wars.",
                 "♠",
-                "BALANCED   FOCUSED   STEADY",
+                "FOCUSED HAND • Combo x3+ gives +1 energy per move",
                 new Color32(68, 171, 232, 255)),
+
             new BattlerDefinition(
                 BattlerId.Aldric,
                 "Aldric",
                 "The Iron Mark",
                 "Order endures.",
                 "♣",
-                "DEFENSE   SHIELD   CONTROL",
+                "IRON MARK • +10 max shield and +1 foundation shield",
                 new Color32(210, 170, 94, 255))
         };
 
@@ -72,13 +74,23 @@ namespace BattleSolitaire.Presentation
 
         public static BattlerDefinition Get(BattlerId id)
         {
-            int index = Mathf.Clamp((int)id, 0, All.Length - 1);
+            int index =
+                Mathf.Clamp(
+                    (int)id,
+                    0,
+                    All.Length - 1);
+
             return All[index];
         }
 
-        public static BattlerDefinition GetByIndex(int index)
+        public static BattlerDefinition GetByIndex(
+            int index)
         {
-            return All[Mathf.Clamp(index, 0, All.Length - 1)];
+            return All[
+                Mathf.Clamp(
+                    index,
+                    0,
+                    All.Length - 1)];
         }
     }
 }

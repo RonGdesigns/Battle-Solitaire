@@ -24,10 +24,32 @@ namespace BattleSolitaire.Battle
         public BattleMatchState State { get; private set; }
             = BattleMatchState.Running;
 
-        public BattleMatch(int playerSeed, int opponentSeed)
+        public BattleMatch(
+            int playerSeed,
+            int opponentSeed)
+            : this(
+                playerSeed,
+                opponentSeed,
+                BattleModifiers.None,
+                BattleModifiers.None)
         {
-            Player = new BattleParticipant("Player", playerSeed);
-            Opponent = new BattleParticipant("Opponent", opponentSeed);
+        }
+
+        public BattleMatch(
+            int playerSeed,
+            int opponentSeed,
+            BattleModifiers playerModifiers,
+            BattleModifiers opponentModifiers)
+        {
+            Player = new BattleParticipant(
+                "Player",
+                playerSeed,
+                playerModifiers);
+
+            Opponent = new BattleParticipant(
+                "Opponent",
+                opponentSeed,
+                opponentModifiers);
         }
 
         public void Tick(float deltaTime)
@@ -48,13 +70,21 @@ namespace BattleSolitaire.Battle
             if (State != BattleMatchState.Running)
                 return BattleMoveOutcome.None;
 
-            BattleParticipant actor = GetParticipant(side);
-            BattleParticipant target = GetOpponent(side);
+            BattleParticipant actor =
+                GetParticipant(side);
 
-            BattleMoveOutcome outcome = actor.ApplyMove(move);
+            BattleParticipant target =
+                GetOpponent(side);
 
-            if (outcome.Counted && outcome.DamageDealt > 0)
-                target.ApplyDamage(outcome.DamageDealt);
+            BattleMoveOutcome outcome =
+                actor.ApplyMove(move);
+
+            if (outcome.Counted &&
+                outcome.DamageDealt > 0)
+            {
+                target.ApplyDamage(
+                    outcome.DamageDealt);
+            }
 
             EvaluateWinner();
             return outcome;
@@ -68,17 +98,22 @@ namespace BattleSolitaire.Battle
             if (State != BattleMatchState.Running)
                 return false;
 
-            BattleParticipant attacker = GetParticipant(attackerSide);
-            BattleParticipant defender = GetOpponent(attackerSide);
+            BattleParticipant attacker =
+                GetParticipant(attackerSide);
 
-            int cost = BattleAttack.GetCost(attackType);
+            BattleParticipant defender =
+                GetOpponent(attackerSide);
+
+            int cost =
+                BattleAttack.GetCost(attackType);
 
             if (attacker.Energy < cost)
                 return false;
 
             if ((attackType == BattleAttackType.Lock ||
                  attackType == BattleAttackType.Blocker) &&
-                (targetColumn < 0 || targetColumn > 6))
+                (targetColumn < 0 ||
+                 targetColumn > 6))
             {
                 return false;
             }
@@ -110,50 +145,77 @@ namespace BattleSolitaire.Battle
             return true;
         }
 
-        public bool CanUseColumn(BattleSide side, int column)
+        public bool CanUseColumn(
+            BattleSide side,
+            int column)
         {
-            return GetParticipant(side).CanUseColumn(column);
+            return GetParticipant(side)
+                .CanUseColumn(column);
         }
 
-        public float GetProgress(BattleSide side)
+        public float GetProgress(
+            BattleSide side)
         {
-            return GetParticipant(side).ClearPercentage;
+            return GetParticipant(side)
+                .ClearPercentage;
         }
 
         private void EvaluateWinner()
         {
-            bool playerPerfectClear = Player.Game.IsVictory();
-            bool opponentPerfectClear = Opponent.Game.IsVictory();
-            bool playerDefeated = Player.IsDefeated;
-            bool opponentDefeated = Opponent.IsDefeated;
+            bool playerPerfectClear =
+                Player.Game.IsVictory();
 
-            if ((playerPerfectClear && opponentPerfectClear) ||
-                (playerDefeated && opponentDefeated))
+            bool opponentPerfectClear =
+                Opponent.Game.IsVictory();
+
+            bool playerDefeated =
+                Player.IsDefeated;
+
+            bool opponentDefeated =
+                Opponent.IsDefeated;
+
+            if ((playerPerfectClear &&
+                 opponentPerfectClear) ||
+                (playerDefeated &&
+                 opponentDefeated))
             {
-                State = BattleMatchState.Draw;
+                State =
+                    BattleMatchState.Draw;
+
                 return;
             }
 
-            if (playerPerfectClear || opponentDefeated)
+            if (playerPerfectClear ||
+                opponentDefeated)
             {
-                State = BattleMatchState.PlayerWon;
+                State =
+                    BattleMatchState.PlayerWon;
+
                 return;
             }
 
-            if (opponentPerfectClear || playerDefeated)
+            if (opponentPerfectClear ||
+                playerDefeated)
             {
-                State = BattleMatchState.OpponentWon;
+                State =
+                    BattleMatchState.OpponentWon;
             }
         }
 
-        private BattleParticipant GetParticipant(BattleSide side)
+        private BattleParticipant GetParticipant(
+            BattleSide side)
         {
-            return side == BattleSide.Player ? Player : Opponent;
+            return side == BattleSide.Player
+                ? Player
+                : Opponent;
         }
 
-        private BattleParticipant GetOpponent(BattleSide side)
+        private BattleParticipant GetOpponent(
+            BattleSide side)
         {
-            return side == BattleSide.Player ? Opponent : Player;
+            return side == BattleSide.Player
+                ? Opponent
+                : Player;
         }
     }
 }

@@ -215,7 +215,11 @@ namespace BattleSolitaire.Presentation
 
             _opponentBattler = ChooseOpponent(_playerBattler.Id);
 
-            Match = new BattleMatch(baseSeed, opponentSeed);
+            Match = new BattleMatch(
+                baseSeed,
+                opponentSeed,
+                BuildModifiers(_playerBattler.Id),
+                BuildModifiers(_opponentBattler.Id));
             _aiController = new BattleAIController(opponentSeed ^ 173);
             _aiSolver = new SolitaireMoveSolver();
             _lastObservedState = BattleMatchState.Running;
@@ -428,7 +432,8 @@ namespace BattleSolitaire.Presentation
             {
                 Profile.RecordMatch(
                     Match,
-                    _playerMatchMaxCombo);
+                    _playerMatchMaxCombo,
+                    _playerBattler.Id);
 
                 _matchRecorded = true;
 
@@ -472,6 +477,29 @@ namespace BattleSolitaire.Presentation
             }
 
             return BattlerCatalog.Get(BattlerId.Vesper);
+        }
+
+        private static BattleModifiers BuildModifiers(
+            BattlerId id)
+        {
+            switch (id)
+            {
+                case BattlerId.Vesper:
+                    return new BattleModifiers(
+                        foundationDamageBonus: 1);
+
+                case BattlerId.Kael:
+                    return new BattleModifiers(
+                        comboEnergyBonusAtThree: 1);
+
+                case BattlerId.Aldric:
+                    return new BattleModifiers(
+                        foundationShieldBonus: 1,
+                        maxShieldBonus: 10);
+
+                default:
+                    return BattleModifiers.None;
+            }
         }
 
         private bool CanPlayerAct()
