@@ -46,7 +46,7 @@ namespace BattleSolitaire.EditorTools
 
             Selection.activeGameObject = root;
 
-            EditorUtility.DisplayDialog(
+            if (!Application.isBatchMode) EditorUtility.DisplayDialog(
                 "Battle Solitaire",
                 "Playable prototype setup is complete.\n\n" +
                 "Press Play to start a local battle against the AI.\n" +

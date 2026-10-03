@@ -170,6 +170,7 @@ namespace BattleSolitaire.Presentation
 
         private void Update()
         {
+            if (AccessibilitySettings.ReducedMotion) { transform.localScale=Vector3.one; return; }
             float desired =
                 _dragging
                     ? 1.08f
@@ -185,6 +186,16 @@ namespace BattleSolitaire.Presentation
                 new Vector3(next, next, 1f);
         }
 
+        public static void CancelCurrentDrag()
+        {
+            if(CurrentDrag==null) return;
+            CardView card=CurrentDrag;
+            card._rect.position=card._startPosition;
+            card._canvasGroup.blocksRaycasts=true; card._canvasGroup.alpha=1f;
+            card._dragging=false; CurrentDrag=null;
+        }
+
+        private void OnDisable() { if(CurrentDrag==this) CancelCurrentDrag(); }
         public void SetSelected(bool selected)
         {
             _selected = selected;
@@ -215,6 +226,7 @@ namespace BattleSolitaire.Presentation
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            if(CurrentDrag!=null && CurrentDrag!=this) return;
             if (!_board.CanBeginDrag(this))
                 return;
 
@@ -232,7 +244,8 @@ namespace BattleSolitaire.Presentation
             if (!_dragging)
                 return;
 
-            _rect.position = eventData.position;
+            Vector2 fingerOffset=Input.touchCount>0?new Vector2(0,Screen.height*.04f):Vector2.zero;
+            _rect.position = eventData.position+fingerOffset;
         }
 
         public void OnEndDrag(PointerEventData eventData)

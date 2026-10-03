@@ -21,6 +21,18 @@ namespace BattleSolitaire.Presentation
         private BattleFrontEndView _frontEnd;
         private TargetingOverlay _targeting;
 
+        private PauseOverlay _pause;
+        private SavedMatch _savedMatch;
+        private bool _paused, _backgrounded, _sessionStarted;
+        private float _checkpointTimer;
+        public bool Paused => _paused;
+        public bool HasSavedMatch => _savedMatch != null;
+        public string RecoveryNotice { get; private set; } = "";
+        public bool SoundEnabled => _feedback.SoundEnabled;
+        public bool HapticsEnabled => _feedback.HapticsEnabled;
+        public void ToggleSound() => _feedback.ToggleSound();
+        public void ToggleHaptics() => _feedback.ToggleHaptics();
+
         private int _matchCounter;
         private float _statusRefreshTimer;
         private string _message = "";
@@ -81,6 +93,7 @@ namespace BattleSolitaire.Presentation
         private void Start()
         {
             Application.targetFrameRate = 60;
+            Input.multiTouchEnabled = false;
             Screen.orientation = ScreenOrientation.Portrait;
 
             Profile = new BattleProfile();
@@ -90,6 +103,9 @@ namespace BattleSolitaire.Presentation
             _feedback.Initialize();
 
             StartRematch();
+            _sessionStarted = false;
+            _savedMatch = MatchSaveStore.Load(out string recovery);
+            RecoveryNotice = recovery;
             CreateRuntimeUI();
 
             _board.Refresh();
@@ -102,7 +118,13 @@ namespace BattleSolitaire.Presentation
             if (Match == null)
                 return;
 
-            if (_menuOpen ||
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (_pause != null && _pause.IsOpen) ResumeBattle();
+                else if (TargetingOpen) _targeting.Close();
+                else OpenPause();
+            }
+            if (_paused || _backgrounded || _menuOpen ||
                 TutorialOpen ||
                 TargetingOpen)
             {
@@ -111,6 +133,8 @@ namespace BattleSolitaire.Presentation
             }
 
             float delta = Time.deltaTime;
+            _checkpointTimer += delta;
+            if (_checkpointTimer >= 2f) SaveCheckpoint();
             Match.Tick(delta);
 
             _playerMatchMaxCombo = Mathf.Max(
@@ -200,7 +224,10 @@ namespace BattleSolitaire.Presentation
                 _frontEnd.Hide();
 
             _menuOpen = false;
+            _savedMatch = null;
+            MatchSaveStore.Clear();
             StartRematch();
+            SaveCheckpoint();
 
             if (_tutorial != null)
                 _tutorial.OpenIfNeeded();
@@ -208,7 +235,10 @@ namespace BattleSolitaire.Presentation
 
         public void ShowFrontEnd()
         {
+            if (_sessionStarted) SaveCheckpoint();
             _menuOpen = true;
+            _paused = false;
+            if (_pause != null) _pause.Close();
 
             if (_frontEnd != null)
                 _frontEnd.Show();
@@ -217,6 +247,11 @@ namespace BattleSolitaire.Presentation
         public void StartRematch()
         {
             _matchCounter++;
+            _paused = false;
+            _sessionStarted = true;
+            _savedMatch = null;
+            _targeting?.Close();
+            if (_pause != null) _pause.Close();
 
             int baseSeed = unchecked(
                 Environment.TickCount +
@@ -273,6 +308,7 @@ namespace BattleSolitaire.Presentation
 
             _feedback.PlayMove(false);
             _board.Refresh();
+            SaveCheckpoint();
         }
 
         public bool PlayerMoveWasteToTableau(int destinationColumn)
@@ -384,6 +420,7 @@ namespace BattleSolitaire.Presentation
                 return;
             }
 
+            if (_paused || _backgrounded || _menuOpen || TutorialOpen) return;
             bool needsColumn =
                 type == BattleAttackType.Lock ||
                 type == BattleAttackType.Blocker;
@@ -432,6 +469,7 @@ namespace BattleSolitaire.Presentation
             _feedback.PlayAttack();
             _fx.ShowAttack(type, false);
             _hud.Refresh();
+            SaveCheckpoint();
         }
 
         public void ShowTutorial()
@@ -487,6 +525,7 @@ namespace BattleSolitaire.Presentation
             }
 
             ObserveMatchResult();
+            SaveCheckpoint();
             _hud.Refresh();
             return true;
         }
@@ -501,6 +540,8 @@ namespace BattleSolitaire.Presentation
 
             if (!_matchRecorded)
             {
+                _savedMatch = null;
+                MatchSaveStore.Clear();
                 Profile.RecordMatch(
                     Match,
                     _playerMatchMaxCombo,
@@ -577,6 +618,7 @@ namespace BattleSolitaire.Presentation
         {
             return Match != null &&
                    Match.State == BattleMatchState.Running &&
+                   !_paused && !_backgrounded &&
                    !TutorialOpen &&
                    !_menuOpen &&
                    !TargetingOpen;
@@ -622,6 +664,70 @@ namespace BattleSolitaire.Presentation
 
             return bestColumn;
         }
+
+        public SavedMatch CaptureCheckpoint()
+        {
+            return new SavedMatch {
+                playerBattler=(int)_playerBattler.Id, opponentBattler=(int)_opponentBattler.Id,
+                difficulty=(int)_aiController.Difficulty, maxCombo=_playerMatchMaxCombo,
+                player=SavedParticipant.Capture(Match.Player), opponent=SavedParticipant.Capture(Match.Opponent), ai=_aiController.Capture()
+            };
+        }
+        public void SaveCheckpoint()
+        {
+            _checkpointTimer=0;
+            if (!_sessionStarted || _menuOpen || Match==null || Match.State!=BattleMatchState.Running) return;
+            _savedMatch=CaptureCheckpoint();
+            RecoveryNotice=MatchSaveStore.Save(_savedMatch)?"Battle saved on this device.":"Could not save to this device. Keep the app open and try again.";
+        }
+        public void ContinueSavedBattle()
+        {
+            if (_savedMatch==null) return;
+            try
+            {
+                _savedMatch.Validate();
+                _playerBattler=BattlerCatalog.Get((BattlerId)_savedMatch.playerBattler);
+                _opponentBattler=BattlerCatalog.Get((BattlerId)_savedMatch.opponentBattler);
+                var restored=new BattleMatch(_savedMatch.player.seed,_savedMatch.opponent.seed,BuildModifiers(_playerBattler.Id),BuildModifiers(_opponentBattler.Id));
+                _savedMatch.player.Restore(restored.Player); _savedMatch.opponent.Restore(restored.Opponent);
+                var ai=new BattleAIController(_savedMatch.ai.seed,(BattleDifficulty)_savedMatch.difficulty); ai.Restore(_savedMatch.ai);
+                Match=restored; _aiController=ai; _aiSolver=new SolitaireMoveSolver();
+                _playerMatchMaxCombo=_savedMatch.maxCombo; _matchRecorded=false; _lastObservedState=BattleMatchState.Running;
+                _sessionStarted=true; _menuOpen=false; _frontEnd.Hide();
+                ShowMessage("Battle restored.");
+                _board.Refresh(); _hud.Refresh(); OpenPause();
+            }
+            catch (Exception e) when(e is System.IO.InvalidDataException || e is ArgumentException)
+            { RecoveryNotice="The saved battle could not be restored. Your career is safe."; _savedMatch=null; _frontEnd.Refresh(); }
+        }
+        public void OpenPause()
+        {
+            if (_pause==null) return;
+            if (TargetingOpen) _targeting.Close();
+            CardView.CancelCurrentDrag();
+            _paused=true; SaveCheckpoint(); _pause.Open();
+        }
+        public void ResumeBattle()
+        {
+            if (_backgrounded) return;
+            _pause?.Close(); _paused=false;
+
+        }
+        public void RequestNewBattle()
+        {
+            if (HasSavedMatch) { OpenPause(); _pause.ConfirmNewBattle(); }
+            else StartBattleFromMenu();
+        }
+        private void OnApplicationPause(bool paused)
+        {
+            _backgrounded=paused;
+            if(paused && _sessionStarted && !_menuOpen) OpenPause();
+        }
+        private void OnApplicationFocus(bool focused)
+        {
+            if(!focused && _sessionStarted && !_menuOpen) OpenPause();
+        }
+        private void OnApplicationQuit() { SaveCheckpoint(); }
 
         private void CreateRuntimeUI()
         {
@@ -692,6 +798,8 @@ namespace BattleSolitaire.Presentation
             _frontEnd = BattleFrontEndView.Create(
                 safeRoot,
                 this);
+            _pause = PauseOverlay.Create(safeRoot, this);
+            if(EventSystem.current!=null) EventSystem.current.pixelDragThreshold=Mathf.Clamp(Mathf.RoundToInt(Screen.dpi>0?Screen.dpi*.06f:12),10,35);
         }
     }
 }

@@ -119,6 +119,13 @@ namespace BattleSolitaire.Battle
                 comboCount: Combo.Count);
         }
 
+        public void RestoreResources(int health, int energy, int shield)
+        {
+            if (health < 1 || health > BattleTuning.MaxHealth || energy < 0 || energy > BattleTuning.MaxEnergy || shield < 0 || shield > MaxShield)
+                throw new ArgumentOutOfRangeException("Saved resources are outside battle limits.");
+            Health = health; Energy = energy; Shield = shield;
+        }
+
         public bool SpendEnergy(int amount)
         {
             if (amount < 0 || Energy < amount)

@@ -18,6 +18,40 @@ namespace BattleSolitaire.EditorTools
         private const string PackageIdentifier =
             "com.rgdevelops.battlesolitaire";
 
+        // Headless build with an optional externally installed Android toolchain.
+        public static void BuildBatch()
+        {
+            string[] args=System.Environment.GetCommandLineArgs();
+            int toolsIndex=System.Array.IndexOf(args,"-androidToolsRoot");
+            if(toolsIndex>=0)
+            {
+                string root=Path.GetFullPath(args[toolsIndex+1]);
+                var type=System.Type.GetType("UnityEditor.Android.AndroidExternalToolsSettings, UnityEditor.Android.Extensions");
+                if(type==null) throw new BuildFailedException("Android editor extension is not installed.");
+                foreach(var name in new[]{"sdkRootPath","ndkRootPath","jdkRootPath"})
+                {
+                    string child=name=="sdkRootPath"?"SDK":name=="ndkRootPath"?"NDK":"OpenJDK";
+                    var property=type.GetProperty(name,System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.Static);
+                    if(property==null) throw new BuildFailedException("Missing Android tools property: "+name);
+                    property.SetValue(null,Path.Combine(root,child));
+                    Debug.Log(name+" = "+property.GetValue(null));
+                }
+            }
+            if(!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Android,BuildTarget.Android))
+                throw new BuildFailedException("Android Build Support is unavailable.");
+            PrepareAndroidSettings();
+            if(!File.Exists(ScenePath)) BattleSolitaireProjectSetup.SetupPlayablePrototype();
+            int outputIndex=System.Array.IndexOf(args,"-apkOutput");
+            string output=outputIndex>=0?Path.GetFullPath(args[outputIndex+1]):Path.GetFullPath(OutputDirectory+"/BattleSolitaire-M8-Playtest.apk");
+            Directory.CreateDirectory(Path.GetDirectoryName(output));
+            var result=BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+                scenes=new[]{ScenePath},locationPathName=output,target=BuildTarget.Android,
+                options=BuildOptions.Development|BuildOptions.AllowDebugging
+            });
+            if(result.summary.result!=BuildResult.Succeeded) throw new BuildFailedException("Android build failed: "+result.summary.result);
+            Debug.Log("M8_APK_BUILD_PASS: "+output);
+        }
+
         [MenuItem("Battle Solitaire/Android/Prepare Android Settings")]
         public static void PrepareAndroidSettings()
         {
@@ -35,8 +69,8 @@ namespace BattleSolitaire.EditorTools
 
             PlayerSettings.productName = "Battle Solitaire";
             PlayerSettings.companyName = "RG Develops";
-            PlayerSettings.bundleVersion = "0.7.0";
-            PlayerSettings.Android.bundleVersionCode = 7;
+            PlayerSettings.bundleVersion = "0.8.0";
+            PlayerSettings.Android.bundleVersionCode = 8;
             PlayerSettings.defaultInterfaceOrientation =
                 UIOrientation.Portrait;
 
@@ -110,7 +144,7 @@ namespace BattleSolitaire.EditorTools
             Directory.CreateDirectory(OutputDirectory);
 
             string outputPath =
-                OutputDirectory + "/BattleSolitaire-M7-Playtest.apk";
+                OutputDirectory + "/BattleSolitaire-M8-Playtest.apk";
 
             var options = new BuildPlayerOptions
             {

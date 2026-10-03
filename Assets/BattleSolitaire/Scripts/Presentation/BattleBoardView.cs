@@ -63,6 +63,8 @@ namespace BattleSolitaire.Presentation
             float scale = Mathf.Max(0.1f, _layoutSize.x / 1080f);
             _layoutRoot.sizeDelta = new Vector2(1080f, _layoutSize.y / scale);
             _layoutRoot.localScale = new Vector3(scale,scale,1);
+            foreach(var column in _columnRoots)
+                if(column!=null) column.offsetMin=new Vector2(column.offsetMin.x,-_layoutRoot.rect.height+85);
         }
         private void LateUpdate()
         {
@@ -77,7 +79,10 @@ namespace BattleSolitaire.Presentation
             for (int i = 0; i < _dynamicObjects.Count; i++)
             {
                 if (_dynamicObjects[i] != null)
+                {
+                    _dynamicObjects[i].SetActive(false);
                     Destroy(_dynamicObjects[i]);
+                }
             }
 
             _dynamicObjects.Clear();
@@ -194,7 +199,7 @@ namespace BattleSolitaire.Presentation
 
         public bool CanBeginDrag(CardView view)
         {
-            if (_controller.Match.State != BattleMatchState.Running ||
+            if (_controller.Paused || _controller.MenuOpen || _controller.TutorialOpen || _controller.TargetingOpen || _controller.Match.State != BattleMatchState.Running ||
                 view.Card == null ||
                 !view.Card.IsFaceUp)
             {
@@ -213,7 +218,7 @@ namespace BattleSolitaire.Presentation
 
         public void CardTapped(CardView view, int clickCount)
         {
-            if (view == null || !view.Card.IsFaceUp)
+            if (_controller.Paused || _controller.MenuOpen || _controller.TutorialOpen || _controller.TargetingOpen || view == null || !view.Card.IsFaceUp)
                 return;
 
             if (clickCount >= 2)
@@ -463,7 +468,7 @@ namespace BattleSolitaire.Presentation
                     _layoutRoot,
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
-                    new Vector2(x, -1020f),
+                    new Vector2(x, -_layoutRoot.rect.height+85),
                     new Vector2(x + CardWidth, -396f),
                     new Color32(7, 45, 37, 0));
 

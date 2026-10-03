@@ -113,3 +113,14 @@ See `Docs/MILESTONE_4.md` for details.
 - imported premium card-back art hook
 - larger attack impact animations
 - Android play-test version advanced to 0.7.0
+
+### Milestone 8 — Phone-ready battle experience
+- pause/resume and explicit resume after backgrounding
+- persistent sound, vibration, and reduced-motion settings
+- validated local checkpoints with backup recovery and Continue
+- saved battlers, both boards, resources, disruptions, and AI scheduling
+- larger phone controls, safer dragging, and long-stack containment
+- verified Android 0.8.0 ARM64 development APK
+
+See `Docs/MILESTONE_8.md` for verification and limitations, and
+`Docs/PHONE-PLAYTEST.md` for the physical-device checklist.

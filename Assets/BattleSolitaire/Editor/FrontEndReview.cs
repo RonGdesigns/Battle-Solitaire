@@ -116,6 +116,7 @@ namespace BattleSolitaire.EditorTools
                 Check(portrait.GetComponent<AspectFillRawImage>() != null, "HUD uses aspect crop");
             Capture(canvas, null, output, "battle-hud", 1080, 1920, report);
             Capture(canvas, null, output, "battle-phone", 390, 844, report);
+            MobileReview.Run(controller,(name,width,height)=>Capture(canvas,null,output,name,width,height,report));
             controller.ShowTutorial();
             Check(controller.TutorialOpen, "Tutorial opens");
             UnityEngine.Object.FindAnyObjectByType<TutorialOverlay>().CloseAndRemember();
@@ -143,6 +144,7 @@ namespace BattleSolitaire.EditorTools
             Check(menu.GetComponentsInChildren<Text>().Any(t => t.name == "StatValue" && t.text == (wins+1).ToString()), "Menu stats refresh");
             Capture(canvas, menu, output, "career-after-win", 1080, 1920, report);
             report.Add("PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, legal/illegal drag dispatch, result return, career refresh, portrait settings, nonempty frame/icon meshes.");
+            report.Add("PASS: mobile lifecycle, settings, complete checkpoint round trip, AI scheduling, corrupt-save fallback, replacement confirmation, long-stack bounds.");
             report.Add("Android build utility compiled with the editor assembly. No APK/device test in this review.");
             File.WriteAllLines(Path.Combine(output, "verification.txt"), report);
         }
@@ -194,6 +196,7 @@ namespace BattleSolitaire.EditorTools
             foreach (AspectRatioFitter fitter in canvas.GetComponentsInChildren<AspectRatioFitter>()) fitter.SetLayoutHorizontal();
             var board = UnityEngine.Object.FindAnyObjectByType<BattleBoardView>();
             typeof(BattleBoardView).GetMethod("FitLayout",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(board,null);
+            board.Refresh();
             Canvas.ForceUpdateCanvases();
             foreach (AspectFillRawImage image in canvas.GetComponentsInChildren<AspectFillRawImage>())
             {
@@ -247,6 +250,7 @@ namespace BattleSolitaire.EditorTools
             string[] fields = { "SelectedBattler", "Wins", "Matches", "LongestCombo", "PerfectClears", "RankPoints", "Difficulty", "Mastery.Vesper", "Mastery.Kael", "Mastery.Aldric" };
             foreach (string field in fields) SaveKey("BattleSolitaire.Profile." + field);
             SaveKey("BattleSolitaire.TutorialSeen.v1");
+            SaveKey("BattleSolitaire.SoundEnabled"); SaveKey("BattleSolitaire.HapticsEnabled"); SaveKey("BattleSolitaire.ReducedMotion");
         }
         private static void SaveKey(string key) => SavedPrefs[key] = PlayerPrefs.HasKey(key) ? (int?)PlayerPrefs.GetInt(key) : null;
         private static void RestorePreferences()

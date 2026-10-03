@@ -81,8 +81,8 @@ namespace BattleSolitaire.Presentation
             PlayerPrefs.SetInt(SoundKey, SoundEnabled ? 1 : 0);
             PlayerPrefs.Save();
 
-            if (SoundEnabled)
-                Play(_move);
+            if (SoundEnabled) Play(_move);
+            else _source.Stop();
         }
 
         public void ToggleHaptics()

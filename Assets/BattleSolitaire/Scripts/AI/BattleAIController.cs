@@ -22,9 +22,23 @@ namespace BattleSolitaire.Battle
         }
     }
 
+    [Serializable]
+    public sealed class SavedAI
+    {
+        public int seed, samples;
+        public float moveTimer, attackTimer;
+        public void Validate()
+        {
+            if (samples < 0 || samples > 1000000 || float.IsNaN(moveTimer) || float.IsNaN(attackTimer) ||
+                moveTimer < -10 || moveTimer > 30 || attackTimer < -10 || attackTimer > 30)
+                throw new System.IO.InvalidDataException("Invalid AI checkpoint.");
+        }
+    }
+
     public sealed class BattleAIController
     {
-        private readonly Random _random;
+        private Random _random;
+        private int _seed, _samples;
         private readonly BattleDifficultySettings _settings;
 
         private float _moveTimer;
@@ -36,7 +50,7 @@ namespace BattleSolitaire.Battle
             int seed,
             BattleDifficulty difficulty = BattleDifficulty.Standard)
         {
-            _random = new Random(seed);
+            _seed = seed; _random = new Random(seed);
             Difficulty = difficulty;
             _settings = BattleDifficultyTuning.Get(difficulty);
 
@@ -63,7 +77,7 @@ namespace BattleSolitaire.Battle
 
                 wantsMove =
                     !fogged ||
-                    _random.NextDouble() >=
+                    NextSample() >=
                         _settings.FogMoveSkipChance;
 
                 float fogMultiplier =
@@ -79,7 +93,7 @@ namespace BattleSolitaire.Battle
                 _attackThinkTimer =
                     _settings.AttackThinkSeconds;
 
-                if (_random.NextDouble() <=
+                if (NextSample() <=
                     _settings.AttackAttemptChance)
                 {
                     BattleParticipant ai =
@@ -105,8 +119,8 @@ namespace BattleSolitaire.Battle
                         bool preferLock =
                             Difficulty ==
                                 BattleDifficulty.Expert
-                                ? _random.NextDouble() < 0.65
-                                : _random.NextDouble() < 0.50;
+                                ? NextSample() < 0.65
+                                : NextSample() < 0.50;
 
                         if (preferLock)
                         {
@@ -132,10 +146,19 @@ namespace BattleSolitaire.Battle
                 targetColumn);
         }
 
+        private double NextSample() { _samples++; return _random.NextDouble(); }
+        public SavedAI Capture() => new SavedAI { seed=_seed, samples=_samples, moveTimer=_moveTimer, attackTimer=_attackThinkTimer };
+        public void Restore(SavedAI state)
+        {
+            state.Validate(); _seed=state.seed; _random=new Random(_seed); _samples=0;
+            for(int i=0;i<state.samples;i++) NextSample();
+            _moveTimer=state.moveTimer; _attackThinkTimer=state.attackTimer;
+        }
+
         private int PickTargetColumn(
             BattleMatch match)
         {
-            if (_random.NextDouble() <=
+            if (NextSample() <=
                 _settings.SmartTargetingChance)
             {
                 int bestColumn = -1;
@@ -181,7 +204,7 @@ namespace BattleSolitaire.Battle
                     return bestColumn;
             }
 
-            int start = _random.Next(0, 7);
+            int start = (int)(NextSample() * 7);
 
             for (int offset = 0;
                  offset < 7;
@@ -206,7 +229,7 @@ namespace BattleSolitaire.Battle
         {
             _moveTimer =
                 (0.7f +
-                 (float)_random.NextDouble() *
+                 (float)NextSample() *
                  0.8f) *
                 multiplier;
         }

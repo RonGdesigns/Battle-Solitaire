@@ -1,0 +1,20 @@
+Battle Solitaire Milestone 8
+Verified October 3, 2026
+
+Unity build: M8_APK_BUILD_PASS (Unity 6000.6.3f1)
+Editor regression: MOBILE_REVIEW_PASS and FRONT_END_REVIEW_PASS
+Package: com.rgdevelops.battlesolitaire
+Version: 0.8.0 (8)
+Minimum Android API: 26
+Target Android API: 36
+ABI: arm64-v8a
+Development APK: debug signed
+apksigner verify: passed, APK Signature Scheme v2
+Size: 54,725,820 bytes
+SHA256: 363917B54CC346FF48B67B322837BAD0E4B6084C7C525C6AC6E22E72A6122572
+MD5: 1F649D3DDBD71891A2231B7D9FC837E7
+
+Google Drive upload verified by file ID, name, MIME type, and byte size.
+https://drive.google.com/file/d/1peV6iOp0jF6iJHkNr45XV_gXS6JiaTLz/view?usp=drivesdk
+
+Physical phone test: pending, owner will install and test.

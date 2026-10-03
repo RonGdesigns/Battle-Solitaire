@@ -63,6 +63,13 @@ namespace BattleSolitaire.Battle
             return 0;
         }
 
+        public void Restore(int count, float seconds)
+        {
+            Count = count;
+            SecondsSinceLastMove = seconds;
+            if (seconds >= BattleTuning.ComboExpireSeconds) Reset();
+        }
+
         public void Reset()
         {
             Count = 0;

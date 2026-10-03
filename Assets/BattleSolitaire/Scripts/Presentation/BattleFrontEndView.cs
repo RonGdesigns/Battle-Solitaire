@@ -17,7 +17,7 @@ namespace BattleSolitaire.Presentation
         private readonly GameObject[] _difficultyMarkers = new GameObject[3];
         private readonly Text[] _statValues = new Text[4];
         private Text _activeName, _activeTitle, _record, _mastery;
-        private Button _battleButton, _helpButton;
+        private Button _battleButton, _helpButton, _settingsButton, _continueButton;
         public bool IsOpen => gameObject.activeSelf;
 
         public static BattleFrontEndView Create(Transform parent, BattleGameController controller)
@@ -71,6 +71,8 @@ namespace BattleSolitaire.Presentation
             _statValues[2].text=p.PerfectClears.ToString();_statValues[3].text=p.GetMasteryLevel(active.Id).ToString();
             _record.text=p.GetRankName()+" • "+p.RankPoints+" RP";
             _mastery.text="MASTERY LEVEL "+p.GetMasteryLevel(active.Id);
+            _continueButton.interactable=_controller.HasSavedMatch;
+            _continueButton.GetComponentInChildren<Text>().text=_controller.HasSavedMatch?"CONTINUE":"NO SAVED BATTLE";
         }
         private void BuildHeader()
         {
@@ -160,10 +162,14 @@ namespace BattleSolitaire.Presentation
             FantasyUI.Icon("CrossedSwords",_battleButton.transform,FantasySymbol.Swords,new Color32(255,130,135,255),.07f,.22f,.24f,.8f);
             FantasyFrame border=_battleButton.GetComponentInChildren<FantasyFrame>();border.Thickness=4;border.Ornate=true;border.Glow=true;
             _battleButton.gameObject.AddComponent<MenuGradient>();
-            _battleButton.onClick.AddListener(_controller.StartBattleFromMenu);
-            FantasyUI.Label("BattleTagline",transform,"SOLVE. STRIKE. ASCEND.",21,FantasyUI.Muted,.53f,.054f,.97f,.08f,true,TextAnchor.MiddleCenter);
-            _helpButton=FantasyUI.Button("TutorialButton",transform,"HOW TO PLAY",.30f,.012f,.70f,.056f,new Color32(82,121,148,255),21);
+            _battleButton.onClick.AddListener(_controller.RequestNewBattle);
+
+            _helpButton=FantasyUI.Button("TutorialButton",transform,"HOW TO PLAY",.35f,.006f,.65f,.066f,new Color32(82,121,148,255),25);
             _helpButton.onClick.AddListener(_controller.ShowTutorial);
+            _settingsButton=FantasyUI.Button("SettingsButton",transform,"SETTINGS",.035f,.006f,.325f,.066f,FantasyUI.Muted,27);
+            _settingsButton.onClick.AddListener(_controller.OpenPause);
+            _continueButton=FantasyUI.Button("ContinueButton",transform,"CONTINUE",.675f,.006f,.965f,.066f,FantasyUI.Blue,25);
+            _continueButton.onClick.AddListener(_controller.ContinueSavedBattle);
         }
         private void ConfigureNavigation()
         {
@@ -173,7 +179,9 @@ namespace BattleSolitaire.Presentation
                 _battlerButtons[i].navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=_battlerButtons[(i+2)%3],selectOnRight=_battlerButtons[(i+1)%3],selectOnUp=_difficultyButtons[i],selectOnDown=_battleButton};
             }
             _battleButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=_battlerButtons[1],selectOnDown=_helpButton};
-            _helpButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=_battleButton,selectOnDown=_difficultyButtons[1]};
+            _helpButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=_battleButton,selectOnDown=_difficultyButtons[1],selectOnLeft=_settingsButton,selectOnRight=_continueButton};
+            _settingsButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnRight=_helpButton,selectOnUp=_battleButton};
+            _continueButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=_helpButton,selectOnUp=_battleButton};
         }
     }
 }

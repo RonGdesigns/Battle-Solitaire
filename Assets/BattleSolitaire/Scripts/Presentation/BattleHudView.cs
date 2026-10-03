@@ -24,7 +24,7 @@ namespace BattleSolitaire.Presentation
         }
         private void Update()
         {
-            float step=4.8f*Time.unscaledDeltaTime;
+            float step=AccessibilitySettings.ReducedMotion?1f:4.8f*Time.unscaledDeltaTime;
             _opponentHealth.value=Mathf.MoveTowards(_opponentHealth.value,_targetOpponentHealth,step);
             _playerHealth.value=Mathf.MoveTowards(_playerHealth.value,_targetPlayerHealth,step);
             _energy.value=Mathf.MoveTowards(_energy.value,_targetEnergy,step);
@@ -88,10 +88,10 @@ namespace BattleSolitaire.Presentation
             _playerShield=FantasyUI.Label("PlayerShield",player.transform,"",25,FantasyUI.Blue,.615f,.1f,.69f,.36f);
             _playerQuote=FantasyUI.Label("PlayerQuote",player.transform,"",25,FantasyUI.Muted,.70f,.15f,.96f,.90f,false,TextAnchor.MiddleCenter);_playerQuote.fontStyle=FontStyle.Italic;
             FantasyUI.Icon("EnergyIcon",transform,FantasySymbol.Energy,FantasyUI.Blue,.045f,.141f,.065f,.164f);
-            FantasyUI.Label("EnergyLabel",transform,"ENERGY",18,FantasyUI.Blue,.08f,.140f,.22f,.163f,true);
+            FantasyUI.Label("EnergyLabel",transform,"ENERGY",25,FantasyUI.Blue,.08f,.140f,.22f,.163f,true);
             _energy=Bar("Energy",transform,FantasyUI.Blue,.22f,.147f,.42f,.158f);
             _energyText=FantasyUI.Label("EnergyValue",transform,"",24,FantasyUI.Blue,.44f,.139f,.55f,.165f);
-            FantasyUI.Label("ComboLabel",transform,"COMBO",18,FantasyUI.Gold,.60f,.140f,.72f,.163f,true);
+            FantasyUI.Label("ComboLabel",transform,"COMBO",25,FantasyUI.Gold,.60f,.140f,.72f,.163f,true);
             _combo=Bar("Combo",transform,FantasyUI.Gold,.73f,.147f,.88f,.158f);
             _comboText=FantasyUI.Label("ComboText",transform,"",23,FantasyUI.Gold,.90f,.140f,.975f,.164f);
             _lockButton=Ability("LockButton","LOCK",BattleTuning.LockCost,FantasySymbol.Lock,.045f,"Stop a rival column.");
@@ -100,18 +100,18 @@ namespace BattleSolitaire.Presentation
             _lockButton.onClick.AddListener(()=>_controller.UsePlayerAttack(BattleAttackType.Lock));
             _fogButton.onClick.AddListener(()=>_controller.UsePlayerAttack(BattleAttackType.Fog));
             _blockerButton.onClick.AddListener(()=>_controller.UsePlayerAttack(BattleAttackType.Blocker));
-            Button menu=FantasyUI.Button("MenuButton",transform,"LOADOUT",.035f,.006f,.30f,.042f,FantasyUI.Muted,21);menu.onClick.AddListener(_controller.ShowFrontEnd);
-            Button help=FantasyUI.Button("HelpButton",transform,"HOW TO PLAY",.70f,.006f,.965f,.042f,FantasyUI.Muted,19);help.onClick.AddListener(_controller.ShowTutorial);
-            FantasyUI.Label("BattleFooter",transform,"SKILL PLAYS. HIGHER STAKES.",17,FantasyUI.Muted,.31f,.007f,.69f,.04f,true,TextAnchor.MiddleCenter);
+            Button menu=FantasyUI.Button("MenuButton",transform,"PAUSE",.035f,.004f,.34f,.06f,FantasyUI.Muted,30);menu.onClick.AddListener(_controller.OpenPause);
+            Button help=FantasyUI.Button("HelpButton",transform,"HOW TO PLAY",.66f,.004f,.965f,.06f,FantasyUI.Muted,26);help.onClick.AddListener(_controller.ShowTutorial);
+
             BuildResult();
         }
         private Button Ability(string name,string label,int cost,FantasySymbol symbol,float x,string description)
         {
-            Button button=FantasyUI.Button(name,transform,"",x,.075f,x+.287f,.133f,new Color32(44,161,211,255));
+            Button button=FantasyUI.Button(name,transform,"",x,.078f,x+.287f,.136f,new Color32(44,161,211,255));
             FantasyUI.Icon("AbilityIcon",button.transform,symbol,FantasyUI.Blue,.055f,.17f,.25f,.83f);
-            FantasyUI.Label("Ability",button.transform,label,27,FantasyUI.Silver,.32f,.47f,.96f,.94f,true);
-            FantasyUI.Label("Cost",button.transform,cost+" ENERGY",23,FantasyUI.Blue,.32f,.1f,.96f,.5f);
-            FantasyUI.Label("Description",transform,description,23,FantasyUI.Muted,x,.043f,x+.287f,.074f,false,TextAnchor.MiddleCenter);
+            FantasyUI.Label("Ability",button.transform,label,32,FantasyUI.Silver,.32f,.47f,.96f,.94f,true);
+            FantasyUI.Label("Cost",button.transform,cost+" ENERGY",27,FantasyUI.Blue,.32f,.1f,.96f,.5f);
+
             return button;
         }
         private static Slider HealthBar(string name,Transform parent,float x,float y,float xx,float yy)

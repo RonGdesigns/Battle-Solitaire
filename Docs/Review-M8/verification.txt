@@ -1,0 +1,20 @@
+Captured vesper-1080x1920 1080x1920
+Captured kael-1080x1920 1080x1920
+Captured aldric-1080x1920 1080x1920
+Captured phone-390x844 390x844
+Captured tablet-1200x1600 1200x1600
+Captured phone-safe-area 1080x2340
+Captured missing-portrait 1080x1920
+Captured battle-hud 1080x1920
+Captured battle-phone 390x844
+Captured pause-phone 390x844
+Captured pause-tablet 1200x1600
+Captured settings-reduced-motion 390x844
+Captured replace-confirmation 390x844
+Captured menu-with-continue 390x844
+Captured long-stack-phone 390x844
+Captured battle-court-cards 1080x1920
+Captured career-after-win 1080x1920
+PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, legal/illegal drag dispatch, result return, career refresh, portrait settings, nonempty frame/icon meshes.
+PASS: mobile lifecycle, settings, complete checkpoint round trip, AI scheduling, corrupt-save fallback, replacement confirmation, long-stack bounds.
+Android build utility compiled with the editor assembly. No APK/device test in this review.

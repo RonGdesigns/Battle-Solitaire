@@ -112,6 +112,7 @@ namespace BattleSolitaire.Presentation
         private void Update()
         {
             float delta = Time.unscaledDeltaTime;
+            if(AccessibilitySettings.ReducedMotion) { _flashTimer=0; _impactTimer=0; }
 
             if (_flashTimer > 0f)
             {
@@ -182,7 +183,7 @@ namespace BattleSolitaire.Presentation
                 color.a = Mathf.Clamp01(normalized * 2.2f);
                 _banner.color = color;
 
-                float scale = Mathf.Lerp(1.18f, 1f, Mathf.Clamp01(reveal * 4f));
+                float scale = AccessibilitySettings.ReducedMotion ? 1f : Mathf.Lerp(1.18f, 1f, Mathf.Clamp01(reveal * 4f));
                 _banner.rectTransform.localScale =
                     new Vector3(scale, scale, 1f);
 

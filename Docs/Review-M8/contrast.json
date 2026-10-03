@@ -1,0 +1,74 @@
+[
+  {
+    "check": "Gold title on rendered navy panel",
+    "foreground": [
+      226,
+      190,
+      120
+    ],
+    "background": [
+      4,
+      12,
+      23
+    ],
+    "sample": [
+      190,
+      150
+    ],
+    "ratio": 11.09
+  },
+  {
+    "check": "Silver body on rendered navy panel",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      4,
+      12,
+      23
+    ],
+    "sample": [
+      190,
+      195
+    ],
+    "ratio": 15.94
+  },
+  {
+    "check": "Silver button label on rendered button",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      5,
+      12,
+      24
+    ],
+    "sample": [
+      185,
+      370
+    ],
+    "ratio": 15.91
+  },
+  {
+    "check": "Muted save status on rendered dim backdrop",
+    "foreground": [
+      174,
+      199,
+      215
+    ],
+    "background": [
+      3,
+      9,
+      18
+    ],
+    "sample": [
+      195,
+      815
+    ],
+    "ratio": 11.36
+  }
+]
