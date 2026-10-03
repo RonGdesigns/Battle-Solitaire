@@ -57,6 +57,11 @@ namespace BattleSolitaire.Battle
             return IsValidColumn(column) && _lockTimeRemaining[column] > 0f;
         }
 
+        public float GetLockTimeRemaining(int column)
+        {
+            return IsValidColumn(column) ? _lockTimeRemaining[column] : 0f;
+        }
+
         public bool IsColumnBlocked(int column)
         {
             if (!IsValidColumn(column))

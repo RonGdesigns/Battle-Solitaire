@@ -2,9 +2,9 @@
 
 Battle Solitaire is a mobile-first competitive solitaire game prototype built around real solitaire decisions plus real-time battle pressure.
 
-## Target
+## Current target
 
-- Unity 6.6
+- Unity 6000.6.3f1
 - Android first
 - Portrait orientation
 - Local player-vs-AI prototype first
@@ -12,17 +12,17 @@ Battle Solitaire is a mobile-first competitive solitaire game prototype built ar
 
 ## Architecture
 
-Gameplay rules are kept in pure C# and separated from Unity presentation.
+Gameplay rules remain separate from Unity presentation.
 
-`Core/` owns cards, seeded deals, legal solitaire moves, foundations, tableau state, and win detection.
-
-`Battle/` owns HP, energy, shield, combo timing, attacks, disruption state, damage, and match results.
-
-`AI/` begins the opponent decision layer. The current controller schedules human-like move attempts and decides when to spend battle energy; the actual solitaire move solver comes next.
+- `Core/` — cards, seeded deals, legal solitaire moves, foundations, tableau state, win detection.
+- `Battle/` — HP, energy, shield, combo timing, attacks, disruption state, damage, match results.
+- `AI/` — human-like action timing plus the first solitaire move solver.
+- `Presentation/` — runtime-generated mobile board, card input, HUD, attacks, results.
+- `Editor/` — one-click playable-scene setup.
 
 ## Completed
 
-### Milestone 1
+### Milestone 1 — Solitaire engine
 - deterministic 52-card seeded deal
 - seven-column tableau
 - stock and waste
@@ -33,7 +33,7 @@ Gameplay rules are kept in pure C# and separated from Unity presentation.
 - hidden-card reveal
 - perfect-clear detection
 
-### Milestone 2
+### Milestone 2 — Battle systems
 - 100 HP battle state
 - 100 max energy
 - shield system
@@ -44,19 +44,30 @@ Gameplay rules are kept in pure C# and separated from Unity presentation.
 - progress-based damage
 - opponent progress reporting
 - perfect-clear battle victory
-- AI move pacing and attack-decision scaffold
+- AI attack pacing
 - anti-energy-farming rule for foundation rollback moves
 
-See `Docs/MILESTONE_2.md` for the current battle tuning and integration contract.
+### Milestone 3 — Playable Unity prototype
+- portrait mobile battle board
+- generated card visuals
+- tap and drag interaction
+- stock/waste/foundation/tableau controls
+- player and opponent HUD
+- attack buttons and disruption overlays
+- AI solitaire move solver
+- local player-vs-AI match loop
+- victory/defeat/rematch flow
+- Editor command to generate the playable Battle scene
 
-## Next milestone
+## Play the prototype
 
-Build the Unity portrait battle board:
+1. Open the repo in Unity 6000.6.3f1.
+2. Wait for scripts/packages to finish importing.
+3. Select **Battle Solitaire > Setup Playable Prototype**.
+4. Press **Play**.
 
-- render card prefabs from pure game state,
-- drag/tap interaction,
-- animate legal and rejected moves,
-- battle HUD,
-- visual Lock/Fog/Blocker effects,
-- AI solitaire move solver,
-- playable local match and rematch loop.
+See `Docs/MILESTONE_3.md` for controls and current limitations.
+
+## Next
+
+Milestone 4 should focus on game feel and mobile delivery: animation, sound/haptics, polished card art, onboarding, stronger AI/fairness tools, and a repeatable Android APK build path before online multiplayer.
