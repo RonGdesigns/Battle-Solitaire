@@ -7,16 +7,21 @@ namespace BattleSolitaire.Presentation
     {
         private static Font _font;
 
-        public static readonly Color32 Background = new Color32(17, 20, 29, 255);
-        public static readonly Color32 Panel = new Color32(28, 33, 47, 245);
-        public static readonly Color32 PanelAlt = new Color32(37, 43, 61, 255);
-        public static readonly Color32 Accent = new Color32(91, 191, 255, 255);
-        public static readonly Color32 Gold = new Color32(245, 194, 66, 255);
-        public static readonly Color32 Danger = new Color32(233, 86, 86, 255);
-        public static readonly Color32 CardFace = new Color32(244, 242, 234, 255);
-        public static readonly Color32 CardBack = new Color32(44, 91, 145, 255);
-        public static readonly Color32 TextLight = new Color32(242, 245, 250, 255);
-        public static readonly Color32 TextDark = new Color32(24, 27, 34, 255);
+        public static readonly Color32 Background = new Color32(8, 14, 24, 255);
+        public static readonly Color32 DeepNavy = new Color32(10, 23, 37, 255);
+        public static readonly Color32 Panel = new Color32(16, 29, 44, 246);
+        public static readonly Color32 PanelAlt = new Color32(24, 42, 61, 255);
+        public static readonly Color32 Accent = new Color32(62, 184, 244, 255);
+        public static readonly Color32 Gold = new Color32(224, 180, 92, 255);
+        public static readonly Color32 GoldDim = new Color32(139, 107, 58, 255);
+        public static readonly Color32 Danger = new Color32(226, 64, 78, 255);
+        public static readonly Color32 Felt = new Color32(13, 61, 48, 255);
+        public static readonly Color32 FeltDark = new Color32(9, 43, 35, 255);
+        public static readonly Color32 CardFace = new Color32(245, 241, 229, 255);
+        public static readonly Color32 CardBack = new Color32(13, 39, 69, 255);
+        public static readonly Color32 TextLight = new Color32(238, 243, 249, 255);
+        public static readonly Color32 TextMuted = new Color32(158, 176, 198, 255);
+        public static readonly Color32 TextDark = new Color32(20, 27, 37, 255);
 
         public static Font Font
         {
@@ -45,7 +50,6 @@ namespace BattleSolitaire.Presentation
             rect.anchorMax = anchorMax;
             rect.offsetMin = offsetMin;
             rect.offsetMax = offsetMax;
-
             return rect;
         }
 
@@ -59,12 +63,7 @@ namespace BattleSolitaire.Presentation
             Color color)
         {
             RectTransform rect = CreateRect(
-                name,
-                parent,
-                anchorMin,
-                anchorMax,
-                offsetMin,
-                offsetMax);
+                name, parent, anchorMin, anchorMax, offsetMin, offsetMax);
 
             Image image = rect.gameObject.AddComponent<Image>();
             image.color = color;
@@ -81,12 +80,7 @@ namespace BattleSolitaire.Presentation
             FontStyle style = FontStyle.Normal)
         {
             RectTransform rect = CreateRect(
-                name,
-                parent,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero);
+                name, parent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             Text text = rect.gameObject.AddComponent<Text>();
             text.font = Font;
@@ -97,7 +91,6 @@ namespace BattleSolitaire.Presentation
             text.text = value;
             text.raycastTarget = false;
             text.resizeTextForBestFit = false;
-
             return text;
         }
 
@@ -109,28 +102,24 @@ namespace BattleSolitaire.Presentation
             Color foreground)
         {
             RectTransform rect = CreateRect(
-                name,
-                parent,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero);
+                name, parent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             Image image = rect.gameObject.AddComponent<Image>();
             image.color = background;
+            AddOutline(image, new Color32(61, 93, 122, 200), 1f);
 
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
 
             ColorBlock colors = button.colors;
             colors.normalColor = background;
-            colors.highlightedColor = Color.Lerp(background, Color.white, 0.12f);
-            colors.pressedColor = Color.Lerp(background, Color.black, 0.18f);
+            colors.highlightedColor = Color.Lerp(background, Color.white, 0.10f);
+            colors.pressedColor = Color.Lerp(background, Color.black, 0.20f);
             colors.disabledColor = new Color(
-                background.r * 0.45f,
-                background.g * 0.45f,
-                background.b * 0.45f,
-                0.8f);
+                background.r * 0.40f,
+                background.g * 0.40f,
+                background.b * 0.40f,
+                0.75f);
             button.colors = colors;
 
             Text text = CreateText(
@@ -144,7 +133,6 @@ namespace BattleSolitaire.Presentation
 
             text.rectTransform.offsetMin = new Vector2(6f, 4f);
             text.rectTransform.offsetMax = new Vector2(-6f, -4f);
-
             return button;
         }
 
@@ -154,12 +142,7 @@ namespace BattleSolitaire.Presentation
             Color fillColor)
         {
             RectTransform rect = CreateRect(
-                name,
-                parent,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero);
+                name, parent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             Slider slider = rect.gameObject.AddComponent<Slider>();
             slider.minValue = 0f;
@@ -173,7 +156,9 @@ namespace BattleSolitaire.Presentation
                 Vector2.one,
                 Vector2.zero,
                 Vector2.zero,
-                new Color32(8, 10, 16, 180));
+                new Color32(3, 8, 15, 210));
+
+            AddOutline(background, new Color32(65, 86, 110, 180), 1f);
 
             Image fill = CreatePanel(
                 "Fill",
@@ -186,8 +171,22 @@ namespace BattleSolitaire.Presentation
 
             slider.fillRect = fill.rectTransform;
             slider.targetGraphic = background;
-
             return slider;
+        }
+
+        public static Outline AddOutline(
+            Graphic graphic,
+            Color color,
+            float distance)
+        {
+            Outline outline = graphic.gameObject.GetComponent<Outline>();
+            if (outline == null)
+                outline = graphic.gameObject.AddComponent<Outline>();
+
+            outline.effectColor = color;
+            outline.effectDistance = new Vector2(distance, -distance);
+            outline.useGraphicAlpha = true;
+            return outline;
         }
 
         public static void SetAnchoredBox(

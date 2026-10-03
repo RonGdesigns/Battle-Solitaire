@@ -7,23 +7,20 @@ namespace BattleSolitaire.Presentation
     public sealed class BattleHudView : MonoBehaviour
     {
         private BattleGameController _controller;
-
+        private Text _opponentIdentity;
         private Text _opponentText;
         private Slider _opponentHealth;
         private Slider _opponentProgress;
-
+        private Text _playerIdentity;
         private Text _playerText;
         private Slider _playerHealth;
         private Slider _energy;
         private Slider _combo;
-
         private Text _comboText;
         private Text _message;
-
         private Button _lockButton;
         private Button _fogButton;
         private Button _blockerButton;
-
         private GameObject _resultPanel;
         private Text _resultText;
 
@@ -49,7 +46,6 @@ namespace BattleSolitaire.Presentation
             view._controller = controller;
             view.Build();
             view.Refresh();
-
             return view;
         }
 
@@ -90,19 +86,37 @@ namespace BattleSolitaire.Presentation
 
             BattleParticipant player = _controller.Match.Player;
             BattleParticipant opponent = _controller.Match.Opponent;
+            BattlerDefinition playerBattler = _controller.PlayerBattler;
+            BattlerDefinition opponentBattler = _controller.OpponentBattler;
+
+            _opponentIdentity.text =
+                opponentBattler.Name.ToUpperInvariant() +
+                "  •  " +
+                opponentBattler.Title;
+
+            _opponentIdentity.color = opponentBattler.Accent;
 
             _opponentText.text =
-                "RIVAL   HP " + opponent.Health +
+                "HP " + opponent.Health +
                 "   SHIELD " + opponent.Shield +
-                "   BOARD " + Mathf.RoundToInt(opponent.ClearPercentage * 100f) + "%";
+                "   BOARD " +
+                Mathf.RoundToInt(opponent.ClearPercentage * 100f) +
+                "%";
 
             _targetOpponentHealth =
                 opponent.Health / (float)BattleTuning.MaxHealth;
 
             _targetOpponentProgress = opponent.ClearPercentage;
 
+            _playerIdentity.text =
+                playerBattler.Name.ToUpperInvariant() +
+                "  •  " +
+                playerBattler.Title;
+
+            _playerIdentity.color = playerBattler.Accent;
+
             _playerText.text =
-                "YOU   HP " + player.Health +
+                "HP " + player.Health +
                 "   SHIELD " + player.Shield +
                 "   ENERGY " + player.Energy + "/100";
 
@@ -166,21 +180,39 @@ namespace BattleSolitaire.Presentation
                 new Vector2(-18f, -18f),
                 PrototypeUI.Panel);
 
+            PrototypeUI.AddOutline(top, PrototypeUI.GoldDim, 1f);
+
             Text title = PrototypeUI.CreateText(
                 "Title",
                 top.transform,
                 "BATTLE SOLITAIRE",
-                38,
-                TextAnchor.UpperCenter,
-                PrototypeUI.TextLight,
+                31,
+                TextAnchor.UpperLeft,
+                PrototypeUI.Gold,
                 FontStyle.Bold);
 
             PrototypeUI.SetAnchoredBox(
                 title.rectTransform,
-                new Vector2(0f, 0.63f),
-                new Vector2(1f, 1f),
-                new Vector2(12f, 0f),
-                new Vector2(-12f, -8f));
+                new Vector2(0.04f, 0.70f),
+                new Vector2(0.62f, 0.96f),
+                Vector2.zero,
+                Vector2.zero);
+
+            _opponentIdentity = PrototypeUI.CreateText(
+                "OpponentIdentity",
+                top.transform,
+                "",
+                24,
+                TextAnchor.MiddleLeft,
+                PrototypeUI.Danger,
+                FontStyle.Bold);
+
+            PrototypeUI.SetAnchoredBox(
+                _opponentIdentity.rectTransform,
+                new Vector2(0.04f, 0.43f),
+                new Vector2(0.84f, 0.70f),
+                Vector2.zero,
+                Vector2.zero);
 
             Button help = PrototypeUI.CreateButton(
                 "Help",
@@ -191,7 +223,7 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 help.GetComponent<RectTransform>(),
-                new Vector2(0.90f, 0.66f),
+                new Vector2(0.90f, 0.69f),
                 new Vector2(0.97f, 0.94f),
                 Vector2.zero,
                 Vector2.zero);
@@ -202,15 +234,15 @@ namespace BattleSolitaire.Presentation
                 "OpponentStats",
                 top.transform,
                 "",
-                24,
+                21,
                 TextAnchor.MiddleLeft,
                 PrototypeUI.TextLight,
                 FontStyle.Bold);
 
             PrototypeUI.SetAnchoredBox(
                 _opponentText.rectTransform,
-                new Vector2(0.04f, 0.32f),
-                new Vector2(0.96f, 0.62f),
+                new Vector2(0.04f, 0.25f),
+                new Vector2(0.96f, 0.45f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -221,8 +253,8 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _opponentHealth.GetComponent<RectTransform>(),
-                new Vector2(0.04f, 0.18f),
-                new Vector2(0.54f, 0.28f),
+                new Vector2(0.04f, 0.12f),
+                new Vector2(0.54f, 0.22f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -233,8 +265,8 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _opponentProgress.GetComponent<RectTransform>(),
-                new Vector2(0.58f, 0.18f),
-                new Vector2(0.96f, 0.28f),
+                new Vector2(0.58f, 0.12f),
+                new Vector2(0.96f, 0.22f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -247,19 +279,37 @@ namespace BattleSolitaire.Presentation
                 new Vector2(-18f, -10f),
                 PrototypeUI.Panel);
 
+            PrototypeUI.AddOutline(bottom, new Color32(47, 104, 142, 180), 1f);
+
+            _playerIdentity = PrototypeUI.CreateText(
+                "PlayerIdentity",
+                bottom.transform,
+                "",
+                21,
+                TextAnchor.MiddleLeft,
+                PrototypeUI.Accent,
+                FontStyle.Bold);
+
+            PrototypeUI.SetAnchoredBox(
+                _playerIdentity.rectTransform,
+                new Vector2(0.04f, 0.79f),
+                new Vector2(0.67f, 0.98f),
+                Vector2.zero,
+                Vector2.zero);
+
             _playerText = PrototypeUI.CreateText(
                 "PlayerStats",
                 bottom.transform,
                 "",
-                23,
+                20,
                 TextAnchor.MiddleLeft,
                 PrototypeUI.TextLight,
                 FontStyle.Bold);
 
             PrototypeUI.SetAnchoredBox(
                 _playerText.rectTransform,
-                new Vector2(0.04f, 0.71f),
-                new Vector2(0.96f, 0.96f),
+                new Vector2(0.04f, 0.64f),
+                new Vector2(0.68f, 0.81f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -270,8 +320,8 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _playerHealth.GetComponent<RectTransform>(),
-                new Vector2(0.04f, 0.62f),
-                new Vector2(0.34f, 0.69f),
+                new Vector2(0.04f, 0.54f),
+                new Vector2(0.31f, 0.61f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -282,8 +332,8 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _energy.GetComponent<RectTransform>(),
-                new Vector2(0.38f, 0.62f),
-                new Vector2(0.70f, 0.69f),
+                new Vector2(0.35f, 0.54f),
+                new Vector2(0.68f, 0.61f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -294,8 +344,8 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 _combo.GetComponent<RectTransform>(),
-                new Vector2(0.74f, 0.62f),
-                new Vector2(0.96f, 0.69f),
+                new Vector2(0.72f, 0.54f),
+                new Vector2(0.96f, 0.61f),
                 Vector2.zero,
                 Vector2.zero);
 
@@ -303,66 +353,64 @@ namespace BattleSolitaire.Presentation
                 "ComboText",
                 bottom.transform,
                 "",
-                20,
+                19,
                 TextAnchor.MiddleRight,
                 PrototypeUI.Gold,
                 FontStyle.Bold);
 
             PrototypeUI.SetAnchoredBox(
                 _comboText.rectTransform,
-                new Vector2(0.70f, 0.70f),
-                new Vector2(0.96f, 0.96f),
+                new Vector2(0.69f, 0.66f),
+                new Vector2(0.96f, 0.94f),
                 Vector2.zero,
                 Vector2.zero);
 
             _lockButton = PrototypeUI.CreateButton(
                 "LockButton",
                 bottom.transform,
-                "LOCK 25",
-                new Color32(102, 74, 170, 255),
+                "LOCK\n25",
+                new Color32(22, 63, 93, 255),
+                PrototypeUI.TextLight);
+
+            _fogButton = PrototypeUI.CreateButton(
+                "FogButton",
+                bottom.transform,
+                "FOG\n25",
+                new Color32(28, 55, 83, 255),
+                PrototypeUI.TextLight);
+
+            _blockerButton = PrototypeUI.CreateButton(
+                "BlockerButton",
+                bottom.transform,
+                "BLOCK\n50",
+                new Color32(75, 54, 31, 255),
                 PrototypeUI.TextLight);
 
             PrototypeUI.SetAnchoredBox(
                 _lockButton.GetComponent<RectTransform>(),
-                new Vector2(0.04f, 0.12f),
-                new Vector2(0.31f, 0.51f),
+                new Vector2(0.04f, 0.08f),
+                new Vector2(0.31f, 0.45f),
+                Vector2.zero,
+                Vector2.zero);
+
+            PrototypeUI.SetAnchoredBox(
+                _fogButton.GetComponent<RectTransform>(),
+                new Vector2(0.365f, 0.08f),
+                new Vector2(0.635f, 0.45f),
+                Vector2.zero,
+                Vector2.zero);
+
+            PrototypeUI.SetAnchoredBox(
+                _blockerButton.GetComponent<RectTransform>(),
+                new Vector2(0.69f, 0.08f),
+                new Vector2(0.96f, 0.45f),
                 Vector2.zero,
                 Vector2.zero);
 
             _lockButton.onClick.AddListener(
                 () => _controller.UsePlayerAttack(BattleAttackType.Lock));
-
-            _fogButton = PrototypeUI.CreateButton(
-                "FogButton",
-                bottom.transform,
-                "FOG 25",
-                new Color32(74, 93, 126, 255),
-                PrototypeUI.TextLight);
-
-            PrototypeUI.SetAnchoredBox(
-                _fogButton.GetComponent<RectTransform>(),
-                new Vector2(0.365f, 0.12f),
-                new Vector2(0.635f, 0.51f),
-                Vector2.zero,
-                Vector2.zero);
-
             _fogButton.onClick.AddListener(
                 () => _controller.UsePlayerAttack(BattleAttackType.Fog));
-
-            _blockerButton = PrototypeUI.CreateButton(
-                "BlockerButton",
-                bottom.transform,
-                "BLOCK 50",
-                new Color32(171, 112, 47, 255),
-                PrototypeUI.TextLight);
-
-            PrototypeUI.SetAnchoredBox(
-                _blockerButton.GetComponent<RectTransform>(),
-                new Vector2(0.69f, 0.12f),
-                new Vector2(0.96f, 0.51f),
-                Vector2.zero,
-                Vector2.zero);
-
             _blockerButton.onClick.AddListener(
                 () => _controller.UsePlayerAttack(BattleAttackType.Blocker));
 
@@ -370,7 +418,7 @@ namespace BattleSolitaire.Presentation
                 "Message",
                 transform,
                 "",
-                25,
+                24,
                 TextAnchor.MiddleCenter,
                 PrototypeUI.TextLight,
                 FontStyle.Bold);
@@ -389,8 +437,9 @@ namespace BattleSolitaire.Presentation
                 new Vector2(0.85f, 0.66f),
                 Vector2.zero,
                 Vector2.zero,
-                new Color32(16, 19, 28, 248));
+                new Color32(8, 16, 27, 250));
 
+            PrototypeUI.AddOutline(result, PrototypeUI.GoldDim, 2f);
             _resultPanel = result.gameObject;
 
             _resultText = PrototypeUI.CreateText(
@@ -399,12 +448,12 @@ namespace BattleSolitaire.Presentation
                 "VICTORY",
                 58,
                 TextAnchor.MiddleCenter,
-                PrototypeUI.TextLight,
+                PrototypeUI.Gold,
                 FontStyle.Bold);
 
             PrototypeUI.SetAnchoredBox(
                 _resultText.rectTransform,
-                new Vector2(0.05f, 0.45f),
+                new Vector2(0.05f, 0.52f),
                 new Vector2(0.95f, 0.92f),
                 Vector2.zero,
                 Vector2.zero);
@@ -418,13 +467,28 @@ namespace BattleSolitaire.Presentation
 
             PrototypeUI.SetAnchoredBox(
                 rematch.GetComponent<RectTransform>(),
-                new Vector2(0.20f, 0.12f),
-                new Vector2(0.80f, 0.40f),
+                new Vector2(0.08f, 0.12f),
+                new Vector2(0.47f, 0.40f),
                 Vector2.zero,
                 Vector2.zero);
 
             rematch.onClick.AddListener(_controller.StartRematch);
 
+            Button loadout = PrototypeUI.CreateButton(
+                "LoadoutButton",
+                result.transform,
+                "LOADOUT",
+                PrototypeUI.PanelAlt,
+                PrototypeUI.TextLight);
+
+            PrototypeUI.SetAnchoredBox(
+                loadout.GetComponent<RectTransform>(),
+                new Vector2(0.53f, 0.12f),
+                new Vector2(0.92f, 0.40f),
+                Vector2.zero,
+                Vector2.zero);
+
+            loadout.onClick.AddListener(_controller.ShowFrontEnd);
             _resultPanel.SetActive(false);
         }
     }

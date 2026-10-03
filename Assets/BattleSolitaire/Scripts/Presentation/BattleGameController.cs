@@ -18,20 +18,32 @@ namespace BattleSolitaire.Presentation
         private BattleFeedback _feedback;
         private BattleFxView _fx;
         private TutorialOverlay _tutorial;
+        private BattleFrontEndView _frontEnd;
 
         private int _matchCounter;
         private float _statusRefreshTimer;
         private string _message = "";
         private float _messageUntil;
         private BattleMatchState _lastObservedState = BattleMatchState.Running;
+        private bool _menuOpen;
+        private bool _matchRecorded;
+        private int _playerMatchMaxCombo;
+
+        private BattlerDefinition _playerBattler;
+        private BattlerDefinition _opponentBattler;
 
         public BattleMatch Match { get; private set; }
+        public BattleProfile Profile { get; private set; }
+        public BattlerDefinition PlayerBattler => _playerBattler;
+        public BattlerDefinition OpponentBattler => _opponentBattler;
 
         public string VisibleMessage =>
             Time.unscaledTime <= _messageUntil ? _message : "";
 
         public bool TutorialOpen =>
             _tutorial != null && _tutorial.IsOpen;
+
+        public bool MenuOpen => _menuOpen;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureRuntime()
@@ -66,6 +78,9 @@ namespace BattleSolitaire.Presentation
             Application.targetFrameRate = 60;
             Screen.orientation = ScreenOrientation.Portrait;
 
+            Profile = new BattleProfile();
+            _playerBattler = BattlerCatalog.Get(Profile.SelectedBattler);
+
             _feedback = gameObject.AddComponent<BattleFeedback>();
             _feedback.Initialize();
 
@@ -74,7 +89,7 @@ namespace BattleSolitaire.Presentation
 
             _board.Refresh();
             _hud.Refresh();
-            _tutorial.OpenIfNeeded();
+            ShowFrontEnd();
         }
 
         private void Update()
@@ -82,7 +97,7 @@ namespace BattleSolitaire.Presentation
             if (Match == null)
                 return;
 
-            if (TutorialOpen)
+            if (_menuOpen || TutorialOpen)
             {
                 _hud.Refresh();
                 return;
@@ -90,6 +105,10 @@ namespace BattleSolitaire.Presentation
 
             float delta = Time.deltaTime;
             Match.Tick(delta);
+
+            _playerMatchMaxCombo = Mathf.Max(
+                _playerMatchMaxCombo,
+                Match.Player.Combo.Count);
 
             if (Match.State == BattleMatchState.Running)
             {
@@ -125,7 +144,8 @@ namespace BattleSolitaire.Presentation
                     if (attacked)
                     {
                         ShowMessage(
-                            "Rival used " +
+                            _opponentBattler.Name +
+                            " used " +
                             intent.AttackType.ToString().ToUpperInvariant() +
                             "!");
 
@@ -149,6 +169,35 @@ namespace BattleSolitaire.Presentation
             _hud.Refresh();
         }
 
+        public void SelectBattler(BattlerId id)
+        {
+            Profile.SelectBattler(id);
+            _playerBattler = BattlerCatalog.Get(id);
+
+            if (_frontEnd != null)
+                _frontEnd.Refresh();
+        }
+
+        public void StartBattleFromMenu()
+        {
+            if (_frontEnd != null)
+                _frontEnd.Hide();
+
+            _menuOpen = false;
+            StartRematch();
+
+            if (_tutorial != null)
+                _tutorial.OpenIfNeeded();
+        }
+
+        public void ShowFrontEnd()
+        {
+            _menuOpen = true;
+
+            if (_frontEnd != null)
+                _frontEnd.Show();
+        }
+
         public void StartRematch()
         {
             _matchCounter++;
@@ -159,12 +208,24 @@ namespace BattleSolitaire.Presentation
 
             int opponentSeed = baseSeed ^ 1597463007;
 
+            _playerBattler = BattlerCatalog.Get(
+                Profile != null
+                    ? Profile.SelectedBattler
+                    : BattlerId.Kael);
+
+            _opponentBattler = ChooseOpponent(_playerBattler.Id);
+
             Match = new BattleMatch(baseSeed, opponentSeed);
             _aiController = new BattleAIController(opponentSeed ^ 173);
             _aiSolver = new SolitaireMoveSolver();
             _lastObservedState = BattleMatchState.Running;
+            _matchRecorded = false;
+            _playerMatchMaxCombo = 0;
 
-            ShowMessage("Battle started.");
+            ShowMessage(
+                _playerBattler.Name +
+                " vs " +
+                _opponentBattler.Name);
 
             if (_board != null)
                 _board.Refresh();
@@ -330,10 +391,11 @@ namespace BattleSolitaire.Presentation
             BattleMoveOutcome outcome =
                 Match.RegisterMove(BattleSide.Player, move);
 
-            bool foundation =
-                move.FoundationMove;
+            _playerMatchMaxCombo = Mathf.Max(
+                _playerMatchMaxCombo,
+                Match.Player.Combo.Count);
 
-            _feedback.PlayMove(foundation);
+            _feedback.PlayMove(move.FoundationMove);
             _fx.ShowMove(outcome);
 
             if (outcome.Counted)
@@ -356,7 +418,25 @@ namespace BattleSolitaire.Presentation
 
         private void ObserveMatchResult()
         {
-            if (Match == null || Match.State == _lastObservedState)
+            if (Match == null ||
+                Match.State == BattleMatchState.Running)
+            {
+                return;
+            }
+
+            if (!_matchRecorded)
+            {
+                Profile.RecordMatch(
+                    Match,
+                    _playerMatchMaxCombo);
+
+                _matchRecorded = true;
+
+                if (_frontEnd != null)
+                    _frontEnd.Refresh();
+            }
+
+            if (Match.State == _lastObservedState)
                 return;
 
             _lastObservedState = Match.State;
@@ -373,11 +453,33 @@ namespace BattleSolitaire.Presentation
             }
         }
 
+        private BattlerDefinition ChooseOpponent(BattlerId playerId)
+        {
+            int start =
+                (_matchCounter + 1) % BattlerCatalog.Count;
+
+            for (int offset = 0;
+                 offset < BattlerCatalog.Count;
+                 offset++)
+            {
+                BattlerDefinition candidate =
+                    BattlerCatalog.GetByIndex(
+                        (start + offset) %
+                        BattlerCatalog.Count);
+
+                if (candidate.Id != playerId)
+                    return candidate;
+            }
+
+            return BattlerCatalog.Get(BattlerId.Vesper);
+        }
+
         private bool CanPlayerAct()
         {
             return Match != null &&
                    Match.State == BattleMatchState.Running &&
-                   !TutorialOpen;
+                   !TutorialOpen &&
+                   !_menuOpen;
         }
 
         private bool CanUsePlayerColumn(int column)
@@ -401,8 +503,12 @@ namespace BattleSolitaire.Presentation
 
             for (int column = 0; column < 7; column++)
             {
-                if (!Match.CanUseColumn(BattleSide.Opponent, column))
+                if (!Match.CanUseColumn(
+                        BattleSide.Opponent,
+                        column))
+                {
                     continue;
+                }
 
                 int cardCount =
                     Match.Opponent.Game.Tableau[column].Count;
@@ -442,9 +548,7 @@ namespace BattleSolitaire.Presentation
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 50;
 
-            CanvasScaler scaler =
-                canvasObject.GetComponent<CanvasScaler>();
-
+            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode =
                 CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080f, 1920f);
@@ -473,20 +577,11 @@ namespace BattleSolitaire.Presentation
 
             safeRoot.gameObject.AddComponent<SafeAreaFitter>();
 
-            _board = BattleBoardView.Create(
-                safeRoot,
-                this);
-
-            _hud = BattleHudView.Create(
-                safeRoot,
-                this);
-
-            _fx = BattleFxView.Create(
-                safeRoot);
-
-            _tutorial = TutorialOverlay.Create(
-                safeRoot,
-                this);
+            _board = BattleBoardView.Create(safeRoot, this);
+            _hud = BattleHudView.Create(safeRoot, this);
+            _fx = BattleFxView.Create(safeRoot);
+            _tutorial = TutorialOverlay.Create(safeRoot, this);
+            _frontEnd = BattleFrontEndView.Create(safeRoot, this);
         }
     }
 }
