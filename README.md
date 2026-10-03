@@ -135,3 +135,12 @@ See `Docs/MILESTONE_8.md` for verification and limitations, and
 - Android playtest version 0.9.0; update-compatible signing
 
 See `Docs/MILESTONE_9.md` for evidence and `Docs/PHONE-PLAYTEST.md` for retesting.
+
+### Milestone 10 — Combat clarity, hints, and results
+- announced rival abilities with a two-second warning and spaced attacks
+- readable effect timers and accurate HP/shield feedback
+- paused hints, stock/recycle lookahead, and no-progress recovery options
+- result statistics with Rematch, Title Screen, and Change Loadout
+- warning/stat checkpoint persistence and Android playtest version 0.10.0
+
+See `Docs/MILESTONE_10.md` for evidence and `Docs/PHONE-PLAYTEST.md` for retesting.

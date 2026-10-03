@@ -14,7 +14,9 @@ namespace BattleSolitaire.Presentation
         private Slider _opponentHealth,_playerHealth,_energy,_combo,_opponentProgress;
         private Button _lockButton,_fogButton,_blockerButton;
         private GameObject _resultPanel;
-        private Text _resultText;
+        private Text _resultText, _resultStats, _combatStatus;
+        private Button _rematch, _resultTitle, _resultLoadout, _hintButton;
+        private GameObject _previousResultFocus;
         private float _targetOpponentHealth,_targetPlayerHealth,_targetEnergy,_targetCombo,_targetOpponentProgress;
         private BattlerId? _shownPlayer,_shownOpponent;
         public static BattleHudView Create(Transform parent,BattleGameController controller)
@@ -48,7 +50,11 @@ namespace BattleSolitaire.Presentation
             _tableCombo.text=player.Combo.Count>1?"COMBO x"+player.Combo.Count:"EVERY CARD MOVES THE BATTLE FORWARD.";
             _tableCombo.fontSize=player.Combo.Count>1?48:23;
             _progressText.text="RIVAL BOARD  "+Mathf.RoundToInt(opponent.ClearPercentage*100)+"%";
-            _message.text=string.IsNullOrEmpty(_controller.VisibleMessage)?"BUILD YOUR COMBO. CONTROL THE BATTLE.":_controller.VisibleMessage;
+            _message.text=string.IsNullOrEmpty(_controller.VisibleMessage)?(string.IsNullOrEmpty(_controller.BoardNotice)?"BUILD YOUR COMBO. CONTROL THE BATTLE.":_controller.BoardNotice):_controller.VisibleMessage;
+            _combatStatus.text=_controller.CombatStatus;
+            bool warning=_controller.Match.RivalWarning.pending;
+            _combatStatus.color=warning?FantasyUI.Gold:FantasyUI.Silver;
+            _tableCombo.gameObject.SetActive(_combatStatus.text.Length==0);
             _targetOpponentHealth=opponent.Health/(float)BattleTuning.MaxHealth;
             _targetPlayerHealth=player.Health/(float)BattleTuning.MaxHealth;
             _targetEnergy=player.Energy/(float)BattleTuning.MaxEnergy;
@@ -59,8 +65,26 @@ namespace BattleSolitaire.Presentation
             float fogCooldown=_controller.Match.Opponent.Disruptions.FogProtectionRemaining;
             _fogButton.transform.Find("Cost").GetComponent<Text>().text=fogCooldown>0?"READY IN "+Mathf.CeilToInt(fogCooldown)+"s":BattleTuning.FogCost+" ENERGY";
             _blockerButton.interactable=running&&player.Energy>=BattleTuning.BlockerCost;
+            _hintButton.interactable=running;
+            bool justFinished=running==false && !_resultPanel.activeSelf;
+            bool justRestarted=running && _resultPanel.activeSelf;
             _resultPanel.SetActive(!running);
-            if(!running){_resultText.text=_controller.Match.State==BattleMatchState.PlayerWon?"VICTORY":_controller.Match.State==BattleMatchState.OpponentWon?"DEFEAT":"DRAW";_resultPanel.transform.SetAsLastSibling();}
+            if(justFinished)
+            {
+                _previousResultFocus=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
+                UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(_rematch.gameObject);
+            }
+            if(justRestarted && _previousResultFocus!=null && _previousResultFocus.activeInHierarchy)
+                UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(_previousResultFocus);
+            if(!running)
+            {
+                _resultText.text=_controller.Match.State==BattleMatchState.PlayerWon?"VICTORY":_controller.Match.State==BattleMatchState.OpponentWon?"DEFEAT":"DRAW";
+                var stats=_controller.Match.PlayerRecord;
+                _resultStats.text="HP DAMAGE DEALT     "+stats.healthDamage+"\nRIVAL SHIELD BROKEN     "+stats.shieldDamage+
+                    "\nDAMAGE BLOCKED     "+stats.shieldBlocked+"\nLONGEST COMBO     x"+stats.longestCombo+
+                    "\nFOUNDATIONS     "+player.Game.GetFoundationCardCount()+" / 52"+"\nENERGY EARNED     "+stats.energyEarned;
+                _resultPanel.transform.SetAsLastSibling();
+            }
         }
         private void Build()
         {
@@ -78,6 +102,7 @@ namespace BattleSolitaire.Presentation
             _progressText=FantasyUI.Label("RivalProgress",transform,"",19,FantasyUI.Muted,.43f,.827f,.70f,.849f,true);
             _opponentProgress=Bar("OpponentProgress",transform,FantasyUI.Blue,.72f,.833f,.96f,.842f);
             _tableCombo=FantasyUI.Label("TableCombo",transform,"",44,FantasyUI.Gold,.08f,.29f,.92f,.34f,true,TextAnchor.MiddleCenter);
+            _combatStatus=FantasyUI.Label("CombatStatus",transform,"",40,FantasyUI.Gold,.06f,.29f,.94f,.34f,true,TextAnchor.MiddleCenter);
             Image incoming=FantasyUI.Panel("BattleMessage",transform,.038f,.255f,.965f,.285f,new Color32(190,49,68,255));
             _message=FantasyUI.Label("Message",incoming.transform,"",25,FantasyUI.Silver,.04f,.05f,.96f,.95f,false,TextAnchor.MiddleCenter);
             Image player=FantasyUI.Panel("PlayerPanel",transform,.025f,.168f,.975f,.252f,new Color32(55,145,184,255));
@@ -105,6 +130,8 @@ namespace BattleSolitaire.Presentation
             Button menu=FantasyUI.Button("MenuButton",transform,"PAUSE",.035f,.004f,.34f,.06f,FantasyUI.Muted,30);menu.onClick.AddListener(_controller.OpenPause);
             Button help=FantasyUI.Button("HelpButton",transform,"HOW TO PLAY",.66f,.004f,.965f,.06f,FantasyUI.Muted,26);help.onClick.AddListener(_controller.ShowTutorial);
 
+            _hintButton=FantasyUI.Button("HintButton",transform,"HINT",.36f,.004f,.64f,.06f,FantasyUI.Gold,30);
+            _hintButton.onClick.AddListener(_controller.ShowHint);
             BuildResult();
         }
         private Button Ability(string name,string label,int cost,FantasySymbol symbol,float x,string description)
@@ -126,12 +153,19 @@ namespace BattleSolitaire.Presentation
         }
         private void BuildResult()
         {
-            Image result=FantasyUI.Panel("ResultPanel",transform,.10f,.40f,.90f,.65f,FantasyUI.Gold,true);_resultPanel=result.gameObject;
-            // Keep the finished-match overlay above the table and fully interactive.
+            Image result=FantasyUI.Panel("ResultPanel",transform,.055f,.24f,.945f,.80f,FantasyUI.Gold,true);_resultPanel=result.gameObject;
             result.raycastTarget=true;
-            _resultText=FantasyUI.Label("ResultText",result.transform,"VICTORY",61,FantasyUI.Gold,.04f,.49f,.96f,.94f,true,TextAnchor.MiddleCenter);
-            Button rematch=FantasyUI.Button("RematchButton",result.transform,"REMATCH",.07f,.14f,.47f,.39f,FantasyUI.Blue,29);rematch.onClick.AddListener(_controller.StartRematch);
-            Button loadout=FantasyUI.Button("LoadoutButton",result.transform,"LOADOUT",.53f,.14f,.93f,.39f,FantasyUI.Gold,29);loadout.onClick.AddListener(_controller.ShowFrontEnd);
+            _resultText=FantasyUI.Label("ResultText",result.transform,"VICTORY",61,FantasyUI.Gold,.04f,.84f,.96f,.97f,true,TextAnchor.MiddleCenter);
+            FantasyUI.Label("ResultSubtitle",result.transform,"YOUR BATTLE RECORD",27,FantasyUI.Muted,.06f,.76f,.94f,.84f,true,TextAnchor.MiddleCenter);
+            _resultStats=FantasyUI.Label("ResultStats",result.transform,"",38,FantasyUI.Silver,.09f,.32f,.91f,.76f,false,TextAnchor.MiddleLeft);
+            _resultStats.lineSpacing=1.55f;
+            _rematch=FantasyUI.Button("RematchButton",result.transform,"REMATCH",.07f,.18f,.48f,.29f,FantasyUI.Blue,31);_rematch.onClick.AddListener(_controller.StartRematch);
+            _resultTitle=FantasyUI.Button("ResultTitleButton",result.transform,"TITLE SCREEN",.52f,.18f,.93f,.29f,FantasyUI.Gold,28);_resultTitle.onClick.AddListener(_controller.ShowTitleScreen);
+            _resultLoadout=FantasyUI.Button("LoadoutButton",result.transform,"CHANGE LOADOUT",.22f,.045f,.78f,.15f,FantasyUI.Muted,27);_resultLoadout.onClick.AddListener(_controller.ShowFrontEnd);
+            var controls=new[]{_rematch,_resultTitle,_resultLoadout};
+            for(int i=0;i<controls.Length;i++) controls[i].navigation=new Navigation {
+                mode=Navigation.Mode.Explicit,selectOnUp=controls[(i+2)%3],selectOnDown=controls[(i+1)%3],
+                selectOnLeft=controls[(i+2)%3],selectOnRight=controls[(i+1)%3] };
             _resultPanel.SetActive(false);
         }
     }

@@ -135,6 +135,7 @@ namespace BattleSolitaire.EditorTools
             Capture(canvas, null, output, "battle-phone", 390, 844, report);
             MobileReview.Run(controller,(name,width,height)=>Capture(canvas,null,output,name,width,height,report));
             PhoneFeedbackReview.Run(controller,canvas,(name,width,height)=>Capture(canvas,null,output,name,width,height,report));
+            BattlePolishReview.Run(controller,canvas,(name,width,height)=>Capture(canvas,null,output,name,width,height,report));
             controller.ShowTutorial();
             Check(controller.TutorialOpen, "Tutorial opens");
             UnityEngine.Object.FindAnyObjectByType<TutorialOverlay>().CloseAndRemember();
@@ -164,6 +165,7 @@ namespace BattleSolitaire.EditorTools
             report.Add("PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, legal/illegal drag dispatch, result return, career refresh, portrait settings, nonempty frame/icon meshes.");
             report.Add("PASS: mobile lifecycle, settings, complete checkpoint round trip, AI scheduling, corrupt-save fallback, replacement confirmation, long-stack bounds.");
             report.Add("PASS: title and tutorial flow, portable suit meshes, full-column pointer drops, single/run/invalid drops, all 16 ace/slot combinations, foundation persistence, bounded Fog, quit/cancel.");
+            report.Add("PASS: two-second rival warning, attack spacing, pause and checkpoint recovery, actual HP/shield accounting, nonmutating hints, recycling, foundation returns, temporary disruption handling, no-progress options, result stats and title/rematch navigation.");
             report.Add("Android build utility compiled with the editor assembly. No APK/device test in this review.");
             File.WriteAllLines(Path.Combine(output, "verification.txt"), report);
         }

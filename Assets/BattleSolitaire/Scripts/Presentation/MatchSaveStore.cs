@@ -84,11 +84,14 @@ namespace BattleSolitaire.Presentation
         public SavedParticipant player, opponent;
         public SavedAI ai;
         public int[] foundationSlots;
+        public BattleCombatRecord playerRecord, opponentRecord;
+        public RivalAttackWarning rivalWarning;
         public void Validate()
         {
             if(version!=1 || playerBattler<0 || playerBattler>2 || opponentBattler<0 || opponentBattler>2 || difficulty<0 || difficulty>2 || maxCombo<0 || maxCombo>100000 || player==null || opponent==null || ai==null)
                 throw new InvalidDataException("Unsupported or incomplete saved match.");
             player.Validate(); opponent.Validate(); ai.Validate();
+            playerRecord?.Validate(); opponentRecord?.Validate(); rivalWarning?.Validate();
             if(foundationSlots!=null)
             {
                 if(foundationSlots.Length!=4) throw new InvalidDataException("Invalid foundation layout.");

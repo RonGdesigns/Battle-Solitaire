@@ -26,7 +26,7 @@ namespace BattleSolitaire.Presentation
             view._continue=FantasyUI.Button("TitleContinue",root,"CONTINUE BATTLE",.13f,.181f,.87f,.257f,FantasyUI.Blue,32);
             view._help=FantasyUI.Button("TitleHelp",root,"HOW TO PLAY",.13f,.083f,.485f,.159f,FantasyUI.Muted,27);
             view._settings=FantasyUI.Button("TitleSettings",root,"SETTINGS",.515f,.083f,.87f,.159f,FantasyUI.Muted,27);
-            FantasyUI.Label("Version",root,"LOCAL BATTLES  /  v0.9.0",23,FantasyUI.Muted,.12f,.015f,.88f,.057f,true,TextAnchor.MiddleCenter);
+            FantasyUI.Label("Version",root,"LOCAL BATTLES  /  v0.10.0",23,FantasyUI.Muted,.12f,.015f,.88f,.057f,true,TextAnchor.MiddleCenter);
             view._play.onClick.AddListener(controller.ShowFrontEnd);view._continue.onClick.AddListener(controller.ContinueSavedBattle);
             view._help.onClick.AddListener(controller.ShowTutorial);view._settings.onClick.AddListener(controller.OpenPause);
             root.gameObject.SetActive(false);return view;

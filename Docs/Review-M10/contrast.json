@@ -1,0 +1,135 @@
+[
+  {
+    "label": "Rival warning on felt",
+    "image": "rival-warning-phone.png",
+    "foreground": [
+      226,
+      190,
+      120
+    ],
+    "background": [
+      4,
+      36,
+      18
+    ],
+    "sample": [
+      50,
+      578
+    ],
+    "ratio": 9.37
+  },
+  {
+    "label": "Effect countdown on felt",
+    "image": "effect-countdown-phone.png",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      4,
+      36,
+      18
+    ],
+    "sample": [
+      50,
+      578
+    ],
+    "ratio": 13.47
+  },
+  {
+    "label": "Hint body on navy",
+    "image": "hint-phone.png",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      8,
+      16,
+      29
+    ],
+    "sample": [
+      70,
+      440
+    ],
+    "ratio": 15.47
+  },
+  {
+    "label": "No-progress body on navy",
+    "image": "stuck-options-phone.png",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      8,
+      16,
+      29
+    ],
+    "sample": [
+      70,
+      440
+    ],
+    "ratio": 15.47
+  },
+  {
+    "label": "Result stats on navy",
+    "image": "results-PlayerWon-phone.png",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      9,
+      17,
+      26
+    ],
+    "sample": [
+      325,
+      365
+    ],
+    "ratio": 15.41
+  },
+  {
+    "label": "Hint button label",
+    "image": "rival-warning-phone.png",
+    "foreground": [
+      222,
+      233,
+      243
+    ],
+    "background": [
+      4,
+      10,
+      20
+    ],
+    "sample": [
+      195,
+      830
+    ],
+    "ratio": 16.11
+  },
+  {
+    "label": "Hint focus border",
+    "image": "rival-warning-phone.png",
+    "foreground": [
+      226,
+      190,
+      120
+    ],
+    "background": [
+      4,
+      10,
+      20
+    ],
+    "sample": [
+      195,
+      830
+    ],
+    "ratio": 11.21
+  }
+]

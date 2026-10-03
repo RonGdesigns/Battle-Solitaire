@@ -140,6 +140,12 @@ namespace BattleSolitaire.Presentation
             _checkpointTimer += delta;
             if (_checkpointTimer >= 2f) SaveCheckpoint();
             Match.Tick(delta);
+            if(Match.RivalAttackLanded)
+            {
+                _feedback.PlayAttack(); _fx.ShowAttack(Match.RivalWarning.type,true);
+                ShowMessage("Rival " + AttackName(Match.RivalWarning.type) + " landed.");
+                _board.RefreshStatus();
+            }
 
             _playerMatchMaxCombo = Mathf.Max(
                 _playerMatchMaxCombo,
@@ -163,7 +169,7 @@ namespace BattleSolitaire.Presentation
                         if (outcome.DamageDealt > 0)
                         {
                             _feedback.PlayHit();
-                            _fx.ShowIncomingDamage(outcome.DamageDealt);
+                            _fx.ShowIncomingDamage(Match.LastHealthDamage,Match.LastShieldDamage);
                         }
                     }
                 }
@@ -171,23 +177,8 @@ namespace BattleSolitaire.Presentation
                 if (Match.State == BattleMatchState.Running &&
                     intent.WantsAttack)
                 {
-                    bool attacked = Match.TryAttack(
-                        BattleSide.Opponent,
-                        intent.AttackType,
-                        intent.TargetColumn);
-
-                    if (attacked)
-                    {
-                        ShowMessage(
-                            _opponentBattler.Name +
-                            " used " +
-                            intent.AttackType.ToString().ToUpperInvariant() +
-                            "!");
-
-                        _feedback.PlayAttack();
-                        _fx.ShowAttack(intent.AttackType, true);
-                        _board.RefreshStatus();
-                    }
+                    if(Match.QueueRivalAttack(intent.AttackType,intent.TargetColumn))
+                        SaveCheckpoint();
                 }
             }
 
@@ -278,6 +269,7 @@ namespace BattleSolitaire.Presentation
         public void StartRematch()
         {
             _matchCounter++;
+            _menuOpen=false; _titleScreen?.Hide(); _frontEnd?.Hide();
             FoundationSlots = new[]{-1,-1,-1,-1};
             _paused = false;
             _sessionStarted = true;
@@ -312,6 +304,7 @@ namespace BattleSolitaire.Presentation
             _lastObservedState = BattleMatchState.Running;
             _matchRecorded = false;
             _playerMatchMaxCombo = 0;
+            BoardNotice="";
 
             ShowMessage(
                 _playerBattler.Name +
@@ -325,19 +318,54 @@ namespace BattleSolitaire.Presentation
                 _hud.Refresh();
         }
 
+        public static string AttackName(BattleAttackType type) => type==BattleAttackType.Blocker?"BLOCK":type.ToString().ToUpperInvariant();
+        public string BoardNotice { get; private set; } = "";
+        public string CombatStatus
+        {
+            get
+            {
+                var warning=Match.RivalWarning;
+                if(warning.pending) return "RIVAL "+AttackName(warning.type)+(warning.type==BattleAttackType.Fog?"":" · COLUMN "+(warning.column+1))+" IN "+warning.remaining.ToString("0.0")+"s";
+                var effects=Match.Player.Disruptions;
+                if(effects.HasFog) return "FOG CLEARS IN "+effects.FogTimeRemaining.ToString("0.0")+"s";
+                var active=new System.Collections.Generic.List<string>();
+                for(int c=0;c<7;c++)
+                {
+                    float seconds=effects.GetLockTimeRemaining(c);
+                    if(seconds>0) active.Add("C"+(c+1)+" LOCK "+seconds.ToString("0.0")+"s");
+                }
+                foreach(var block in effects.Blockers) active.Add("C"+(block.Column+1)+" BLOCK "+block.MovesRemaining+" moves / "+block.TimeRemaining.ToString("0.0")+"s");
+                return active.Count>0?string.Join(" · ",active):"";
+            }
+        }
+        public void ShowHint()
+        {
+            if(!CanPlayerAct()) return;
+            var hint=BattleHintPlanner.Find(Match.Player);
+            OpenPause(); _pause.ShowHint(hint);
+        }
+        private void CheckRecycledBoard()
+        {
+            var hint=BattleHintPlanner.Find(Match.Player);
+            BoardNotice=hint.HasMove?"":hint.Waiting?"A route is temporarily blocked. Tap HINT.":"No new route found. Tap HINT for options.";
+            if(BoardNotice.Length>0) ShowMessage(BoardNotice);
+        }
         public void PlayerDraw()
         {
             if (!CanPlayerAct())
                 return;
 
+            bool recycling=Match.Player.Game.Stock.Count==0;
             bool changed = Match.Player.Game.DrawCard();
 
             if (!changed)
             {
-                InvalidAction("No cards left to draw.");
+                ShowHint();
                 return;
             }
 
+            BoardNotice="";
+            if(recycling) CheckRecycledBoard();
             _feedback.PlayMove(false);
             _board.Refresh();
             SaveCheckpoint();
@@ -515,7 +543,7 @@ namespace BattleSolitaire.Presentation
         public void ShowMessage(string message)
         {
             _message = message ?? "";
-            _messageUntil = Time.unscaledTime + 1.7f;
+            _messageUntil = Time.unscaledTime + 3f;
         }
 
         public void InvalidAction(string message)
@@ -535,6 +563,7 @@ namespace BattleSolitaire.Presentation
                 return false;
             }
 
+            BoardNotice="";
             BattleMoveOutcome outcome =
                 Match.RegisterMove(BattleSide.Player, move);
 
@@ -543,14 +572,14 @@ namespace BattleSolitaire.Presentation
                 Match.Player.Combo.Count);
 
             _feedback.PlayMove(move.FoundationMove);
-            _fx.ShowMove(outcome);
+            _fx.ShowMove(outcome,Match.LastHealthDamage,Match.LastShieldDamage);
 
             if (outcome.Counted)
             {
                 string text = "+" + outcome.EnergyGained + " energy";
 
-                if (outcome.DamageDealt > 0)
-                    text += "   " + outcome.DamageDealt + " damage";
+                if (Match.LastHealthDamage > 0) text += "   " + Match.LastHealthDamage + " HP damage";
+                if (Match.LastShieldDamage > 0) text += "   " + Match.LastShieldDamage + " shield hit";
 
                 if (outcome.ShieldGained > 0)
                     text += "   +" + outcome.ShieldGained + " shield";
@@ -559,6 +588,8 @@ namespace BattleSolitaire.Presentation
             }
 
             ObserveMatchResult();
+            if(Match.State==BattleMatchState.Running && Match.Player.Game.Stock.Count==0 && Match.Player.Game.Waste.Count==0)
+                CheckRecycledBoard();
             SaveCheckpoint();
             _hud.Refresh();
             return true;
@@ -705,6 +736,7 @@ namespace BattleSolitaire.Presentation
                 playerBattler=(int)_playerBattler.Id, opponentBattler=(int)_opponentBattler.Id,
                 difficulty=(int)_aiController.Difficulty, maxCombo=_playerMatchMaxCombo,
                 foundationSlots=(int[])FoundationSlots.Clone(),
+                playerRecord=Match.PlayerRecord.Copy(), opponentRecord=Match.OpponentRecord.Copy(), rivalWarning=Match.RivalWarning.Copy(),
                 player=SavedParticipant.Capture(Match.Player), opponent=SavedParticipant.Capture(Match.Opponent), ai=_aiController.Capture()
             };
         }
@@ -727,6 +759,8 @@ namespace BattleSolitaire.Presentation
                 _savedMatch.player.Restore(restored.Player); _savedMatch.opponent.Restore(restored.Opponent);
                 var ai=new BattleAIController(_savedMatch.ai.seed,(BattleDifficulty)_savedMatch.difficulty); ai.Restore(_savedMatch.ai);
                 FoundationSlots=_savedMatch.foundationSlots!=null?(int[])_savedMatch.foundationSlots.Clone():new[]{-1,-1,-1,-1};
+                restored.RestoreCombat(_savedMatch.playerRecord,_savedMatch.opponentRecord,_savedMatch.rivalWarning);
+                restored.PlayerRecord.longestCombo=Math.Max(restored.PlayerRecord.longestCombo,_savedMatch.maxCombo);
                 Match=restored; _aiController=ai; _aiSolver=new SolitaireMoveSolver();
                 _playerMatchMaxCombo=_savedMatch.maxCombo; _matchRecorded=false; _lastObservedState=BattleMatchState.Running;
                 _sessionStarted=true; _menuOpen=false; _frontEnd.Hide(); _titleScreen?.Hide();

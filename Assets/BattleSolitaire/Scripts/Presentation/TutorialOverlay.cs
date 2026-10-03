@@ -12,8 +12,8 @@ namespace BattleSolitaire.Presentation
         private readonly string[] _bodies={
             "Build downward in alternating colors. Place a red 4 on a black 5. Drop on the last card or anywhere in its column. Only kings can start an empty column.",
             "Start any empty foundation with any ace. That pile then follows its suit: ace, 2, 3, all the way to king. Double-tap an exposed card to send it to a legal foundation.",
-            "Foundation moves damage your rival and build shield. Earn energy for abilities. Fog hides only foundations for 2 seconds, with a 20-second cooldown. Your tableau stays readable.",
-            "Pause freezes both boards. Save & Loadout keeps your match for later. Quit Battle ends the match and returns to the title screen. To win, reduce your rival to 0 HP or finish all four foundations."
+            "Foundation moves damage your rival and build shield. Earn energy for abilities. Rival abilities warn you 2 seconds before landing. Fog hides foundations for 2 seconds and recharges for 20 seconds.",
+            "Pause freezes both boards. Hint pauses the battle and suggests a route. Save & Loadout keeps your match; Quit Battle returns to the title. Win by reducing your rival to 0 HP or finishing all four foundations."
         };
         private Text _stepText,_title,_body,_nextLabel;
         private Button _next,_back,_close;

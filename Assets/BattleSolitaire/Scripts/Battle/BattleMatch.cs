@@ -18,6 +18,29 @@ namespace BattleSolitaire.Battle
 
     public sealed class BattleMatch
     {
+        public BattleCombatRecord PlayerRecord { get; private set; } = new BattleCombatRecord();
+        public BattleCombatRecord OpponentRecord { get; private set; } = new BattleCombatRecord();
+        public RivalAttackWarning RivalWarning { get; private set; } = new RivalAttackWarning();
+        public int LastHealthDamage { get; private set; }
+        public int LastShieldDamage { get; private set; }
+        public bool RivalAttackLanded { get; private set; }
+        public void RestoreCombat(BattleCombatRecord player, BattleCombatRecord opponent, RivalAttackWarning warning)
+        {
+            player?.Validate(); opponent?.Validate(); warning?.Validate();
+            PlayerRecord=player?.Copy() ?? new BattleCombatRecord();
+            OpponentRecord=opponent?.Copy() ?? new BattleCombatRecord();
+            RivalWarning=warning?.Copy() ?? new RivalAttackWarning();
+        }
+        public bool QueueRivalAttack(BattleAttackType type,int column)
+        {
+            if(State!=BattleMatchState.Running || RivalWarning.pending || RivalWarning.cooldown>0 ||
+               !System.Enum.IsDefined(typeof(BattleAttackType),type) || Opponent.Energy<BattleAttack.GetCost(type)) return false;
+            if(type==BattleAttackType.Fog ? Player.Disruptions.FogProtectionRemaining>0 : !Player.CanUseColumn(column)) return false;
+            RivalWarning.pending=true; RivalWarning.type=type; RivalWarning.column=column;
+            RivalWarning.remaining=BattleTuning.RivalWarningSeconds;
+            return true;
+        }
+
         public BattleParticipant Player { get; }
         public BattleParticipant Opponent { get; }
 
@@ -54,13 +77,29 @@ namespace BattleSolitaire.Battle
 
         public void Tick(float deltaTime)
         {
+            RivalAttackLanded=false;
             if (State != BattleMatchState.Running)
+            {
+                RivalWarning.pending=false;
                 return;
+            }
 
-            Player.Tick(deltaTime);
-            Opponent.Tick(deltaTime);
-
+            Player.Tick(System.Math.Max(0,deltaTime));
+            Opponent.Tick(System.Math.Max(0,deltaTime));
             EvaluateWinner();
+            if(State!=BattleMatchState.Running) { RivalWarning.pending=false; return; }
+            if(deltaTime<=0) return;
+            RivalWarning.cooldown=System.Math.Max(0,RivalWarning.cooldown-deltaTime);
+            if(RivalWarning.pending)
+            {
+                RivalWarning.remaining=System.Math.Max(0,RivalWarning.remaining-deltaTime);
+                if(RivalWarning.remaining<=0)
+                {
+                    RivalWarning.pending=false;
+                    RivalAttackLanded=TryAttack(BattleSide.Opponent,RivalWarning.type,RivalWarning.column);
+                    RivalWarning.cooldown=BattleTuning.RivalAttackCooldownSeconds;
+                }
+            }
         }
 
         public BattleMoveOutcome RegisterMove(
@@ -79,11 +118,19 @@ namespace BattleSolitaire.Battle
             BattleMoveOutcome outcome =
                 actor.ApplyMove(move);
 
-            if (outcome.Counted &&
-                outcome.DamageDealt > 0)
+            LastHealthDamage=0; LastShieldDamage=0;
+            BattleCombatRecord record=side==BattleSide.Player?PlayerRecord:OpponentRecord;
+            BattleCombatRecord defense=side==BattleSide.Player?OpponentRecord:PlayerRecord;
+            if(outcome.Counted)
             {
-                target.ApplyDamage(
-                    outcome.DamageDealt);
+                record.energyEarned+=outcome.EnergyGained;
+                record.longestCombo=System.Math.Max(record.longestCombo,outcome.ComboCount);
+                int shieldBefore=target.Shield;
+                LastHealthDamage=target.ApplyDamage(outcome.DamageDealt);
+                LastShieldDamage=shieldBefore-target.Shield;
+                record.healthDamage+=LastHealthDamage;
+                record.shieldDamage+=LastShieldDamage;
+                defense.shieldBlocked+=LastShieldDamage;
             }
 
             EvaluateWinner();
@@ -95,7 +142,7 @@ namespace BattleSolitaire.Battle
             BattleAttackType attackType,
             int targetColumn = -1)
         {
-            if (State != BattleMatchState.Running)
+            if (State != BattleMatchState.Running || !System.Enum.IsDefined(typeof(BattleAttackType),attackType))
                 return false;
 
             BattleParticipant attacker =

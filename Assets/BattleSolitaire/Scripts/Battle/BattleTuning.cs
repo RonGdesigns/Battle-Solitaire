@@ -2,6 +2,9 @@ namespace BattleSolitaire.Battle
 {
     public static class BattleTuning
     {
+        public const float RivalWarningSeconds = 2f;
+        public const float RivalAttackCooldownSeconds = 10f;
+        public const float RivalOpeningGraceSeconds = 15f;
         public const int MaxHealth = 100;
         public const int MaxEnergy = 100;
         public const int MaxShield = 30;

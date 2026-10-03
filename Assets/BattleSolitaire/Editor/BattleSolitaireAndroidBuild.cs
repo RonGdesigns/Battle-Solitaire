@@ -42,14 +42,14 @@ namespace BattleSolitaire.EditorTools
             PrepareAndroidSettings();
             if(!File.Exists(ScenePath)) BattleSolitaireProjectSetup.SetupPlayablePrototype();
             int outputIndex=System.Array.IndexOf(args,"-apkOutput");
-            string output=outputIndex>=0?Path.GetFullPath(args[outputIndex+1]):Path.GetFullPath(OutputDirectory+"/BattleSolitaire-M9-Playtest.apk");
+            string output=outputIndex>=0?Path.GetFullPath(args[outputIndex+1]):Path.GetFullPath(OutputDirectory+"/BattleSolitaire-M10-Playtest.apk");
             Directory.CreateDirectory(Path.GetDirectoryName(output));
             var result=BuildPipeline.BuildPlayer(new BuildPlayerOptions {
                 scenes=new[]{ScenePath},locationPathName=output,target=BuildTarget.Android,
                 options=BuildOptions.Development|BuildOptions.AllowDebugging
             });
             if(result.summary.result!=BuildResult.Succeeded) throw new BuildFailedException("Android build failed: "+result.summary.result);
-            Debug.Log("M9_APK_BUILD_PASS: "+output);
+            Debug.Log("M10_APK_BUILD_PASS: "+output);
         }
 
         [MenuItem("Battle Solitaire/Android/Prepare Android Settings")]
@@ -69,8 +69,8 @@ namespace BattleSolitaire.EditorTools
 
             PlayerSettings.productName = "Battle Solitaire";
             PlayerSettings.companyName = "RG Develops";
-            PlayerSettings.bundleVersion = "0.9.0";
-            PlayerSettings.Android.bundleVersionCode = 9;
+            PlayerSettings.bundleVersion = "0.10.0";
+            PlayerSettings.Android.bundleVersionCode = 10;
             PlayerSettings.defaultInterfaceOrientation =
                 UIOrientation.Portrait;
 
@@ -144,7 +144,7 @@ namespace BattleSolitaire.EditorTools
             Directory.CreateDirectory(OutputDirectory);
 
             string outputPath =
-                OutputDirectory + "/BattleSolitaire-M9-Playtest.apk";
+                OutputDirectory + "/BattleSolitaire-M10-Playtest.apk";
 
             var options = new BuildPlayerOptions
             {

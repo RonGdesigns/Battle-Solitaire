@@ -1,3 +1,4 @@
+using BattleSolitaire.Battle;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,6 +12,7 @@ namespace BattleSolitaire.Presentation
         private Button _resume, _sound, _haptics, _motion, _loadout, _newBattle, _quit;
         private GameObject _previousFocus;
         private bool _confirm, _quitting;
+        private BattleHint _hint;
         private RectTransform _panel;
         public bool IsOpen => gameObject.activeSelf;
         public static PauseOverlay Create(Transform parent,BattleGameController controller)
@@ -23,9 +25,10 @@ namespace BattleSolitaire.Presentation
         public void Open()
         {
             if(!IsOpen) _previousFocus=EventSystem.current?.currentSelectedGameObject;
-            _confirm=false; _quitting=false; gameObject.SetActive(true); transform.SetAsLastSibling(); Refresh();
+            _hint=null; _confirm=false; _quitting=false; gameObject.SetActive(true); transform.SetAsLastSibling(); Refresh();
             EventSystem.current?.SetSelectedGameObject(_resume.gameObject);
         }
+        public void ShowHint(BattleHint hint) { _hint=hint; Refresh(); }
         public void Close()
         {
             gameObject.SetActive(false);
@@ -55,6 +58,18 @@ namespace BattleSolitaire.Presentation
             _loadout.gameObject.SetActive(!_confirm && !_controller.TitleOpen);
             _quit.gameObject.SetActive(!_confirm && !_controller.MenuOpen);
             if(!_confirm) _newBattle.gameObject.SetActive(!_controller.MenuOpen);else _newBattle.gameObject.SetActive(true);
+            if(_hint!=null && !_confirm)
+            {
+                FantasyUI.Box(_panel,.055f,.22f,.945f,.80f);
+                _title.text=_hint.HasMove?"TRY THIS MOVE":_hint.Waiting?"WAIT FOR AN OPENING":"NO PROGRESS FOUND";
+                _description.text=_hint.Text+"\n\nThe battle is paused while you read.";
+                FantasyUI.Box(_description.rectTransform,.075f,.38f,.925f,.84f);
+                FantasyUI.Box((RectTransform)_resume.transform,.08f,.225f,.92f,.345f);
+                FantasyUI.Box((RectTransform)_newBattle.transform,.08f,.075f,.92f,.195f);
+                Label(_resume,"RESUME BATTLE");
+                _sound.gameObject.SetActive(false);_haptics.gameObject.SetActive(false);_motion.gameObject.SetActive(false);
+                _loadout.gameObject.SetActive(false);_quit.gameObject.SetActive(false);
+            }
             var controls=new System.Collections.Generic.List<Button>();
             foreach(var button in new[]{_resume,_sound,_haptics,_motion,_loadout,_newBattle,_quit})
                 if(button.gameObject.activeSelf) controls.Add(button);

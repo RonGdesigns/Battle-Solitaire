@@ -1,0 +1,46 @@
+Captured title-phone 390x844
+Captured title-desktop 1280x1920
+Captured tutorial-page-1 390x844
+Captured tutorial-page-2 390x844
+Captured tutorial-page-3 390x844
+Captured tutorial-page-4 390x844
+Captured tutorial-desktop 1280x1920
+Captured vesper-1080x1920 1080x1920
+Captured kael-1080x1920 1080x1920
+Captured aldric-1080x1920 1080x1920
+Captured phone-390x844 390x844
+Captured tablet-1200x1600 1200x1600
+Captured phone-safe-area 1080x2340
+Captured missing-portrait 1080x1920
+Captured battle-hud 1080x1920
+Captured battle-phone 390x844
+Captured pause-phone 390x844
+Captured pause-tablet 1200x1600
+Captured settings-reduced-motion 390x844
+Captured replace-confirmation 390x844
+Captured menu-with-continue 390x844
+Captured long-stack-phone 390x844
+Captured fixed-stack-drop-phone 390x844
+Captured all-suits-phone 390x844
+Captured all-suits-desktop 1280x1920
+Captured fog-readable-tableau 390x844
+Captured quit-confirmation-phone 390x844
+Captured title-after-quit 390x844
+Captured rival-warning-phone 390x844
+Captured rival-warning-desktop 1280x1920
+Captured effect-countdown-phone 390x844
+Captured hint-phone 390x844
+Captured hint-desktop 1280x1920
+Captured stuck-options-phone 390x844
+Captured results-PlayerWon-phone 390x844
+Captured results-desktop 1280x1920
+Captured results-OpponentWon-phone 390x844
+Captured results-Draw-phone 390x844
+Captured warning-reduced-motion-phone 390x844
+Captured battle-court-cards 1080x1920
+Captured career-after-win 1080x1920
+PASS: crop math, all battler/difficulty persistence, passive text, keyboard navigation/submit, pointer selection, Battle, tutorial, Lock/Block targeting and invalid-target recovery, legal/illegal drag dispatch, result return, career refresh, portrait settings, nonempty frame/icon meshes.
+PASS: mobile lifecycle, settings, complete checkpoint round trip, AI scheduling, corrupt-save fallback, replacement confirmation, long-stack bounds.
+PASS: title and tutorial flow, portable suit meshes, full-column pointer drops, single/run/invalid drops, all 16 ace/slot combinations, foundation persistence, bounded Fog, quit/cancel.
+PASS: two-second rival warning, attack spacing, pause and checkpoint recovery, actual HP/shield accounting, nonmutating hints, recycling, foundation returns, temporary disruption handling, no-progress options, result stats and title/rematch navigation.
+Android build utility compiled with the editor assembly. No APK/device test in this review.

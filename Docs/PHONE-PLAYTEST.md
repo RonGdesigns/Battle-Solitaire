@@ -1,15 +1,15 @@
-# Battle Solitaire 0.9.0 — phone retest
+# Battle Solitaire 0.10.0 — Phone playtest
 
-Install `BattleSolitaire-M9-Playtest.apk` as an update to 0.8.0. Keep the existing installation so career progress and its saved match remain available.
+Install `BattleSolitaire-M10-Playtest.apk` over the previous playtest build. The package and signing identity stay the same, so an ordinary update should keep your career and saved battle. Do not uninstall first if you want to keep local progress.
 
-1. Launch the app. It should start on the new title screen. Try How to Play, move backward and forward, and close it.
-2. Start a battle. Confirm clubs, diamonds, hearts, and spades are visible on cards, including the exposed edges of overlapping cards.
-3. Build a long run. Drop the next card directly on its bottom card, then try the space below the stack. Also drag a valid run of several cards and try an invalid same-color move.
-4. Place aces into different empty foundation positions. Follow with the matching twos. Save & Loadout, then Continue: the same foundation positions should remain.
-5. Watch Fog: it should leave the tableau and waste readable, hide only foundation cards for two seconds, and have a 20-second cooldown. New matches have a 15-second opening grace period.
-6. Open Pause > Quit Battle. Choose Keep Current Battle first. Then repeat and confirm Quit Battle. The app should return to the title screen, remove that unfinished match, and keep your career stats.
-7. Check that Save & Loadout still preserves a match, and that closing/reopening the app restores it through Continue.
+1. Start a battle. Watch for the rival ability warning: type, column where applicable, and a two-second countdown. Verify the announced column is the one affected and that abilities no longer pile up.
+2. Pause during a warning, then resume. Save & Loadout and Continue should preserve the remaining warning, with the restored match paused until you resume.
+3. Compare health and shield feedback. Shield absorption should not be reported as lost HP. Check that Lock/Fog countdowns and Block's moves/time remaining are readable.
+4. Tap Hint. The battle should pause while you read, and no card should move on its own. Try the suggested route, including drawing or recycling when suggested.
+5. On a board that feels stuck, use Hint. You can keep playing or choose New Battle. Canceling replacement must keep the current match. Confirming replacement starts a fresh deal.
+6. Finish a match. Check damage, blocked damage, longest combo, foundations, and earned energy. Try Rematch and Title Screen. Rematch should reset match statistics while keeping career progress.
+7. Briefly retest the previous fixes: drop at the bottom of a long run, visible suits, any ace in any empty foundation slot, and Quit Battle returning to the title.
 
-Report your phone model, Android version, and any failed step. A short recording of a rejected drop is especially useful because it shows where your finger and card land.
+Please note whether the warning is easy to notice, whether the ten-second minimum gap feels comfortable, and any hint that is unclear or leads you in circles. A screenshot of the board and the hint text will help reproduce it.
 
-Build and editor checks are documented separately. Physical Android touch, lifecycle, font appearance, performance, and battery behavior require this phone test.
+Hints examine short routes and cannot guarantee that a deal is winnable. A no-progress message leaves the choice to you.

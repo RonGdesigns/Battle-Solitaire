@@ -37,7 +37,7 @@ namespace BattleSolitaire.Presentation
             return view;
         }
 
-        public void ShowMove(BattleMoveOutcome outcome)
+        public void ShowMove(BattleMoveOutcome outcome, int healthDamage, int shieldDamage)
         {
             if (!outcome.Counted)
                 return;
@@ -52,21 +52,21 @@ namespace BattleSolitaire.Presentation
             else if (outcome.DamageDealt > 0)
             {
                 ShowBanner(
-                    outcome.DamageDealt + " DAMAGE",
+                    healthDamage>0?healthDamage+" HP DAMAGE":shieldDamage+" SHIELD HIT",
                     PrototypeUI.Accent,
-                    0.50f);
+                    1.25f);
             }
 
             if (outcome.DamageDealt > 0)
                 Flash(new Color32(91, 191, 255, 255), 0.16f);
         }
 
-        public void ShowIncomingDamage(int amount)
+        public void ShowIncomingDamage(int healthDamage, int shieldDamage)
         {
-            if (amount <= 0)
-                return;
-
-            ShowBanner("-" + amount + " HP", PrototypeUI.Danger, 0.55f);
+            if (healthDamage<=0 && shieldDamage<=0) return;
+            string text=healthDamage>0?"-"+healthDamage+" HP":"SHIELD HELD";
+            if(shieldDamage>0) text+="  ·  -"+shieldDamage+" SHIELD";
+            ShowBanner(text, healthDamage>0?FantasyUI.Silver:FantasyUI.Blue, 1.5f);
             Flash(PrototypeUI.Danger, 0.24f);
             Impact(PrototypeUI.Danger, 0.32f);
         }
@@ -74,7 +74,7 @@ namespace BattleSolitaire.Presentation
         public void ShowAttack(BattleAttackType type, bool incoming)
         {
             string text = incoming
-                ? "INCOMING " + type.ToString().ToUpperInvariant()
+                ? BattleGameController.AttackName(type) + " LANDED"
                 : type.ToString().ToUpperInvariant() + "!";
 
             ShowBanner(
@@ -232,15 +232,15 @@ namespace BattleSolitaire.Presentation
                 "BattleBanner",
                 transform,
                 "",
-                48,
+                32,
                 TextAnchor.MiddleCenter,
                 PrototypeUI.TextLight,
                 FontStyle.Bold);
 
             PrototypeUI.SetAnchoredBox(
                 _banner.rectTransform,
-                new Vector2(0.08f, 0.43f),
-                new Vector2(0.92f, 0.58f),
+                new Vector2(0.08f, 0.343f),
+                new Vector2(0.92f, 0.38f),
                 Vector2.zero,
                 Vector2.zero);
 

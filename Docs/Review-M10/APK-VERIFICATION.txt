@@ -1,0 +1,22 @@
+Battle Solitaire M10 APK verification — October 3, 2026
+
+Build: Unity 6000.6.3f1, IL2CPP, ARM64, development playtest
+Build result: M10_APK_BUILD_PASS
+Package: com.rgdevelops.battlesolitaire
+Version: 0.10.0 (10)
+Minimum Android API: 26
+Target Android API: 36
+Size: 44,201,114 bytes
+SHA-256: 31607F7AE72AEEA781912D484B18952B9F64905A2F480BDF5073EE0101D87EBA
+
+apksigner: Verifies; APK Signature Scheme v2: true
+Signing certificate SHA-256:
+ca4d1407a697f1bcfb4c20dad25c69c900e32981598f5b76b1f7bc6cb29c53f7
+This matches the M8/M9 playtest signing certificate.
+
+Automated reviews: MOBILE_REVIEW_PASS, PHONE_FEEDBACK_REVIEW_PASS,
+BATTLE_POLISH_REVIEW_PASS, FRONT_END_REVIEW_PASS.
+Simulated phone raycasts verified Hint, Rematch, and Title Screen with targets >=44 px.
+Representative contrast: 9.37:1–16.11:1. American English lint: clean.
+No physical Android installation or phone playtest was performed by Codex.
+Local APK delivery only; correct It's Ron DG destination remains unresolved.
